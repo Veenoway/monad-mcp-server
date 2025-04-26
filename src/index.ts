@@ -1,6 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import axios from "axios";
+import { execSync } from "child_process";
 import { ethers } from "ethers";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import { z } from "zod";
 
 console.error("Starting MCP server...");
@@ -33,43 +38,8 @@ const MINIMAL_ERC20_ABI = [
 const server = new McpServer({
   name: "monad-mcp-tutorial",
   version: "0.0.1",
-  capabilities: ["get-mon-balance", "deploy-solidity-source"],
+  capabilities: ["deploy-solidity-source", "verify-deployed-contract"],
 });
-
-server.tool(
-  "get-mon-balance",
-  "Get MON balance for an address on Monad testnet",
-  {
-    address: z.string().describe("Monad testnet address to check balance for"),
-  },
-  async ({ address }) => {
-    try {
-      console.error(`Checking balance for address: ${address}`);
-      const balance = await provider.getBalance(address);
-      console.error(`Balance retrieved: ${balance.toString()}`);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Balance for ${address}: ${ethers.formatEther(balance)} MON`,
-          },
-        ],
-      };
-    } catch (error) {
-      console.error("Error details:", error);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Failed to retrieve balance for address: ${address}. Error: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          },
-        ],
-      };
-    }
-  }
-);
 
 // Fonction d'aide pour détecter les types de paramètres
 function detectParamType(param: string): string {
@@ -344,26 +314,145 @@ server.tool(
       const contractAddress = await deployedContract.getAddress();
       console.error(`Contract deployed at address: ${contractAddress}`);
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Solidity contract deployed successfully!
+      // Tentative de vérification automatique du contrat juste après le déploiement
+      console.error("Tentative de vérification automatique du contrat...");
 
-Contract address: ${contractAddress}
+      try {
+        // Extraire le nom du contrat du code source
+        const contractName =
+          sourceCode.match(/contract\s+(\w+)/)?.[1] || "DeployedContract";
+        console.error(`Nom du contrat détecté: ${contractName}`);
+
+        // Attendre un peu pour s'assurer que le contrat est bien indexé
+        console.error("Attente de 10 secondes pour indexation...");
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+
+        // Tenter la vérification avec Foundry si disponible (plus fiable)
+        try {
+          // Tester si Foundry est disponible
+          execSync("forge --version", { stdio: "pipe" });
+          console.error("Foundry trouvé, tentative de vérification directe...");
+
+          // Formater les arguments pour la commande
+          const argsString =
+            processedArgs.length > 0
+              ? processedArgs.map((a) => a.toString()).join(" ")
+              : "";
+
+          // Construire et exécuter la commande Foundry
+          const cmd = `forge verify-contract ${contractAddress} ${contractName} --chain-id 10143 --verifier-url "https://testnet.monadexplorer.com/api" --compiler-version "0.8.20" --optimizer-runs 200 --via-ir ${
+            argsString ? `--constructor-args ${argsString}` : ""
+          }`;
+          console.error(`Exécution: ${cmd}`);
+
+          const output = execSync(cmd, { encoding: "utf8" });
+          console.error("Vérification Foundry réussie:", output);
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Contrat déployé et vérifié avec succès!
+
+Adresse du contrat: ${contractAddress}
 Transaction hash: ${txHash}
 Block: ${txReceipt?.blockNumber}
 Gas used: ${txReceipt?.gasUsed?.toString() || "unknown"}
 
-Your contract is deployed and ready to use on Monad testnet.
+Votre contrat est déployé et vérifié sur Monad testnet.
+Vous pouvez consulter votre contrat vérifié ici: https://testnet.monadexplorer.com/address/${contractAddress}
 
-Arguments used for deployment:
+Arguments utilisés pour le déploiement:
+${processedArgs
+  .map((arg, i) => `- Argument ${i + 1}: ${arg.toString()}`)
+  .join("\n")}`,
+              },
+            ],
+          };
+        } catch (foundryError) {
+          console.error("Foundry non disponible ou erreur:", foundryError);
+        }
+
+        // Plan B: Vérification via API REST
+        try {
+          console.error("Tentative de vérification via API REST...");
+
+          const apiData = {
+            address: contractAddress,
+            chainId: 10143,
+            name: contractName,
+            sourceCode: sourceCode,
+            constructorArguments:
+              processedArgs.length > 0
+                ? processedArgs.map((a) => a.toString()).join(",")
+                : "",
+            compilerVersion: "0.8.20",
+            optimizationEnabled: true,
+            runs: 200,
+          };
+
+          const apiResponse = await axios.post(
+            "https://testnet.monadexplorer.com/api/contract/verify",
+            apiData,
+            { headers: { "Content-Type": "application/json" } }
+          );
+
+          console.error("Réponse API:", apiResponse.data);
+
+          if (apiResponse.status === 200 || apiResponse.data.success) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Contrat déployé et vérifié avec succès via API!
+
+Adresse du contrat: ${contractAddress}
+Transaction hash: ${txHash}
+Block: ${txReceipt?.blockNumber}
+Gas used: ${txReceipt?.gasUsed?.toString() || "unknown"}
+
+Votre contrat est déployé et vérifié sur Monad testnet.
+Vous pouvez consulter votre contrat vérifié ici: https://testnet.monadexplorer.com/address/${contractAddress}
+
+Arguments utilisés pour le déploiement:
+${processedArgs
+  .map((arg, i) => `- Argument ${i + 1}: ${arg.toString()}`)
+  .join("\n")}`,
+                },
+              ],
+            };
+          }
+        } catch (apiError) {
+          console.error("Échec de l'API de vérification:", apiError);
+        }
+      } catch (verifyError) {
+        console.error("Erreur globale de vérification:", verifyError);
+      }
+
+      // Si toutes les méthodes de vérification ont échoué
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Contrat déployé avec succès mais non vérifié automatiquement.
+
+Adresse du contrat: ${contractAddress}
+Transaction hash: ${txHash}
+Block: ${txReceipt?.blockNumber}
+Gas used: ${txReceipt?.gasUsed?.toString() || "unknown"}
+
+Votre contrat est déployé sur Monad testnet.
+
+Arguments utilisés pour le déploiement:
 ${processedArgs
   .map((arg, i) => `- Argument ${i + 1}: ${arg.toString()}`)
   .join("\n")}
 
-Note: This deployment uses a predefined template based on your source code analysis. For a fully customized deployment, compile your code with Remix or Hardhat.
-`,
+Pour vérifier manuellement votre contrat:
+1. Visitez: https://testnet.monadexplorer.com/address/${contractAddress}
+2. Cliquez sur l'onglet "Code" puis sur "Verify & Publish"
+3. Entrez le nom du contrat: ${contract}
+4. Uploadez le code source et renseignez les arguments du constructeur`,
           },
         ],
       };
@@ -379,6 +468,326 @@ Note: This deployment uses a predefined template based on your source code analy
 2. Check that constructor arguments match expected types
 3. Try a simpler contract, like a basic ERC20 or storage contract
 4. For complex or custom contracts, use Remix to compile your code first`;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: friendlyMessage,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  "verify-deployed-contract",
+  "Vérifier un contrat déployé sur le testnet Monad en utilisant une API de vérification",
+  {
+    contractAddress: z
+      .string()
+      .describe("Adresse du contrat déployé à vérifier"),
+    sourceCode: z.string().describe("Code source Solidity du contrat"),
+    contractName: z.string().describe("Nom du contrat à vérifier"),
+    constructorArgs: z
+      .array(z.any())
+      .optional()
+      .describe("Arguments du constructeur (optionnel)"),
+    compilerVersion: z
+      .string()
+      .optional()
+      .describe("Version du compilateur (par défaut: 0.8.20)"),
+    useApi: z
+      .boolean()
+      .optional()
+      .describe(
+        "Utiliser l'API directe au lieu des instructions manuelles (par défaut: false)"
+      ),
+    runVerification: z
+      .boolean()
+      .optional()
+      .describe(
+        "Exécuter la commande Foundry directement (nécessite Foundry installé, par défaut: false)"
+      ),
+  },
+  async ({
+    contractAddress,
+    sourceCode,
+    contractName,
+    constructorArgs = [],
+    compilerVersion = "0.8.20",
+    useApi = false,
+    runVerification = false,
+  }) => {
+    try {
+      console.error(`Vérification du contrat à l'adresse: ${contractAddress}`);
+      console.error(`Nom du contrat: ${contractName}`);
+
+      // Utiliser une approche directe sans Foundry
+      const tempDir = path.join(os.tmpdir(), `verify-${Date.now()}`);
+
+      try {
+        // Créer la structure de répertoires temporaire
+        fs.mkdirSync(tempDir, { recursive: true });
+
+        // Écrire le code source dans un fichier
+        const contractFileName = `${contractName}.sol`;
+        const contractFilePath = path.join(tempDir, contractFileName);
+        fs.writeFileSync(contractFilePath, sourceCode);
+
+        console.error("Préparation de la vérification du contrat...");
+
+        // Formater les arguments du constructeur pour l'API
+        const constructorArgsFormatted = constructorArgs.map((arg) => {
+          if (
+            typeof arg === "string" &&
+            !arg.startsWith("0x") &&
+            !/^\d+$/.test(arg)
+          ) {
+            return `"${arg}"`;
+          }
+          return arg.toString();
+        });
+
+        // Si l'utilisateur a demandé d'utiliser l'API directement
+        if (useApi) {
+          console.error("Tentative de vérification via l'API directe...");
+
+          // Importation de node-fetch pour les requêtes HTTP
+          // Note: dans un environnement de production, cette dépendance devrait être ajoutée au package.json
+          const { default: fetch } = await import("node-fetch");
+
+          // Préparation des données pour l'API Explorer Monad
+          const apiData = {
+            address: contractAddress,
+            chainId: 10143,
+            name: contractName,
+            source: {
+              content: sourceCode,
+              language: "Solidity",
+              settings: {
+                optimizer: {
+                  enabled: true,
+                  runs: 200,
+                },
+                evmVersion: "paris",
+                viaIR: true,
+              },
+            },
+            compiler: compilerVersion,
+            constructorArguments:
+              constructorArgs.length > 0 ? constructorArgs.join(",") : "",
+            license: "MIT",
+          };
+
+          try {
+            // URL de l'API de vérification Monad (mise à jour vers testnet.monadexplorer.com)
+            const verifyUrl =
+              "https://testnet.monadexplorer.com/api/v2/verifycontract";
+
+            console.error(`Envoi de la requête à ${verifyUrl}...`);
+
+            const response = await fetch(verifyUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(apiData),
+            });
+
+            const responseData = await response.json();
+
+            if (response.ok) {
+              return {
+                content: [
+                  {
+                    type: "text",
+                    text: `Contrat vérifié avec succès via l'API!
+
+Adresse du contrat: ${contractAddress}
+Nom du contrat: ${contractName}
+Réponse de l'API: ${JSON.stringify(responseData)}
+
+Vous pouvez consulter votre contrat vérifié sur:
+https://testnet.monadexplorer.com/address/${contractAddress}`,
+                  },
+                ],
+              };
+            } else {
+              throw new Error(`Erreur API: ${JSON.stringify(responseData)}`);
+            }
+          } catch (apiError) {
+            console.error(
+              "Erreur lors de l'appel à l'API de vérification:",
+              apiError
+            );
+
+            // En cas d'échec de l'API, revenir aux instructions manuelles
+            console.error(
+              "Échec de la vérification via API, génération des instructions manuelles..."
+            );
+          }
+        }
+
+        // Préparation des données pour l'API (utilisé pour les instructions ou en cas d'échec de l'API)
+        const verificationData = {
+          address: contractAddress,
+          chainId: 10143,
+          name: contractName,
+          source: sourceCode,
+          compiler: compilerVersion,
+          constructorArgs: constructorArgsFormatted,
+          license: "MIT", // License par défaut
+        };
+
+        // Enregistrer les données de vérification dans un fichier JSON pour référence
+        fs.writeFileSync(
+          path.join(tempDir, "verification-data.json"),
+          JSON.stringify(verificationData, null, 2)
+        );
+
+        console.error("Données de vérification préparées");
+
+        // Créer un message de vérification réussie avec instructions
+        const verificationInstructions = `Pour vérifier votre contrat sur Monad Explorer:
+
+1. Accédez à l'explorateur Monad Testnet: https://testnet.monadexplorer.com/address/${contractAddress}
+
+2. Cliquez sur l'onglet "Code" puis sur "Verify & Publish"
+
+3. Remplissez les informations suivantes:
+   - Nom du contrat: ${contractName}
+   - Version du compilateur: ${compilerVersion}
+   - Licence: MIT (ou choisissez la licence appropriée)
+   - Code Source: Copiez et collez votre code complet
+   - Optimisation: Activée avec 200 runs
+   - EVM Version: Paris
+   - Via IR: Activé
+
+4. Si votre contrat a des arguments de constructeur, fournissez-les dans le format approprié:
+${constructorArgsFormatted
+  .map((arg, i) => `   - Argument ${i + 1}: ${arg}`)
+  .join("\n")}
+
+5. Cliquez sur "Verify & Publish"
+
+Note: Les données de vérification ont été enregistrées localement pour référence à: ${path.join(
+          tempDir,
+          "verification-data.json"
+        )}`;
+
+        // Créer un code d'exemple pour Foundry (pour ceux qui l'ont installé)
+        const foundryCommand = `forge verify-contract ${contractAddress} ${contractName} \\
+  --chain-id 10143 \\
+  --verifier-url "https://testnet.monadexplorer.com/api" \\
+  --compiler-version "${compilerVersion}" \\
+  --optimizer-runs 200 \\
+  --via-ir \\
+  ${
+    constructorArgsFormatted.length > 0
+      ? `--constructor-args ${constructorArgsFormatted.join(" ")}`
+      : ""
+  }`;
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Préparation de la vérification du contrat terminée!
+
+Adresse du contrat: ${contractAddress}
+Nom du contrat: ${contractName}
+Version du compilateur: ${compilerVersion}
+
+${verificationInstructions}
+
+Pour vérifier automatiquement avec Foundry, utilisez:
+\`\`\`
+${foundryCommand}
+\`\`\`
+
+Pour vérifier via l'API directement lors du prochain appel, ajoutez le paramètre "useApi: true".
+Les fichiers nécessaires à la vérification ont été enregistrés dans: ${tempDir}`,
+            },
+          ],
+        };
+      } finally {
+        // Conservez les fichiers temporaires pour référence
+        console.error(
+          `Les fichiers de vérification sont disponibles dans: ${tempDir}`
+        );
+
+        // Si l'utilisateur a demandé d'exécuter directement la commande Foundry
+        if (runVerification) {
+          console.error(
+            "Tentative d'exécution directe de Foundry pour la vérification..."
+          );
+
+          try {
+            // Vérifier si Foundry est installé
+            execSync("forge --version", { stdio: "pipe" });
+
+            // Construire la commande Foundry
+            const foundryVerifyCommand = `forge verify-contract ${contractAddress} ${contractName} --chain-id 10143 --verifier-url "https://testnet.monadexplorer.com/api" --compiler-version "${compilerVersion}" --optimizer-runs 200 --via-ir ${
+              constructorArgs && constructorArgs.length > 0
+                ? `--constructor-args ${constructorArgs.join(" ")}`
+                : ""
+            }`;
+
+            console.error(`Exécution de la commande: ${foundryVerifyCommand}`);
+
+            // Exécuter la commande en temps réel et capturer la sortie
+            const forgeResult = execSync(foundryVerifyCommand, {
+              encoding: "utf8",
+            });
+            console.error(`Résultat de Foundry: ${forgeResult}`);
+
+            // Si nous arrivons ici, la vérification a réussi
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Contrat vérifié avec succès via Foundry!
+
+Adresse du contrat: ${contractAddress}
+Nom du contrat: ${contractName}
+
+Résultat de Foundry:
+${forgeResult}
+
+Vous pouvez consulter votre contrat vérifié ici:
+https://testnet.monadexplorer.com/address/${contractAddress}`,
+                },
+              ],
+            };
+          } catch (forgeError) {
+            console.error("Erreur lors de l'exécution de Foundry:", forgeError);
+
+            // Continuer avec le flux normal en cas d'échec
+            console.error(
+              "La vérification directe via Foundry a échoué, retour aux instructions..."
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error(
+        "Erreur lors de la préparation de la vérification du contrat:",
+        error
+      );
+
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      let friendlyMessage = `Échec de la préparation de la vérification du contrat. Erreur: ${errorMessage}`;
+      friendlyMessage += `\n\nSuggestions:
+1. Vérifiez que le code source est valide et compile correctement
+2. Assurez-vous que les arguments du constructeur sont corrects
+3. Vérifiez que l'adresse du contrat est correcte
+4. Essayez de vérifier manuellement via l'explorateur Monad: https://testnet.monadexplorer.com/address/${contractAddress}
+5. Si vous avez Foundry installé localement, essayez la commande:
+   forge verify-contract ${contractAddress} ${contractName} --chain-id 10143 --verifier-url "https://testnet.monadexplorer.com/api"`;
 
       return {
         content: [
