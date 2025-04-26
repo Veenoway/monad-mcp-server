@@ -36,6 +36,7 @@ const server = new McpServer({
     "call-contract-function",
     "get-nft-holders",
     "token-swap",
+    "get-portfolio",
   ],
 });
 
