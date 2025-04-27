@@ -4062,38 +4062,34 @@ function generateSimulatedLeaderboard(
   const leaderboard: Performer[] = [];
 
   for (let i = 0; i < participantCount; i++) {
-    // Les performances sont meilleures pour les premiers rangs
     const performance =
       i < participantCount * 0.1
-        ? 15 + Math.random() * 25 // Top 10%
+        ? 15 + Math.random() * 25
         : i < participantCount * 0.3
-        ? 8 + Math.random() * 15 // Top 30%
+        ? 8 + Math.random() * 15
         : i < participantCount * 0.6
-        ? 3 + Math.random() * 8 // Top 60%
-        : -5 + Math.random() * 10; // Bottom 40%
+        ? 3 + Math.random() * 8
+        : -5 + Math.random() * 10;
 
     leaderboard.push({
       rank: i + 1,
       username: `MonadUser_${Math.random().toString(36).substring(2, 7)}`,
       performance: parseFloat(performance.toFixed(2)),
-      initialInvestment: (1 + Math.random() * 9).toFixed(2), // 1-10 MON
+      initialInvestment: (1 + Math.random() * 9).toFixed(2),
       strategy: randomElement(getStrategiesForType(challengeType)),
-      rewardShare: 0, // Sera calculé plus tard
+      rewardShare: 0,
     });
   }
 
-  // Trier par performance
   leaderboard.sort((a, b) => b.performance - a.performance);
 
-  // Mettre à jour les rangs
   leaderboard.forEach((participant, index) => {
     participant.rank = index + 1;
 
-    // Calculer la part des récompenses pour les top participants
     if (index < 3) {
-      participant.rewardShare = [50, 30, 15][index]; // Top 3: 50%, 30%, 15%
+      participant.rewardShare = [50, 30, 15][index];
     } else if (index < 10) {
-      participant.rewardShare = 5 / 7; // Les 7 suivants se partagent 5%
+      participant.rewardShare = 5 / 7;
     } else {
       participant.rewardShare = 0;
     }
@@ -4582,7 +4578,6 @@ function allocateAssets(
       }
       break;
 
-    // Autres cas similaires...
     default:
       allocation.push(
         {
@@ -4617,7 +4612,6 @@ function visualizeLeaderboard(
   username: string,
   estimatedRank: number
 ) {
-  // Créer une visualisation textuelle du leaderboard
   let visualization = ``;
 
   visualization += `🏆 LEADERBOARD (${leaderboard.length} Participants) 🏆\n\n`;
@@ -4625,7 +4619,6 @@ function visualizeLeaderboard(
   visualization += `│ RANK  │ USERNAME            │ PERFORMANCE │   STRATEGY   │\n`;
   visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
 
-  // Afficher les 5 premiers
   for (let i = 0; i < Math.min(5, leaderboard.length); i++) {
     const entry = leaderboard[i];
     visualization += `│ ${entry.rank
@@ -4637,13 +4630,11 @@ function visualizeLeaderboard(
     } │ ${entry.strategy.substring(0, 12).padEnd(12)} │\n`;
   }
 
-  // Ajouter des lignes de séparation si nécessaire
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│       │         ...         │            │              │\n`;
   }
 
-  // Ajouter l'utilisateur actuel si son rang est estimé entre 6 et length-5
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│ ${estimatedRank
@@ -4653,13 +4644,11 @@ function visualizeLeaderboard(
     )} │ ${"Your Strategy".padEnd(12)} │\n`;
   }
 
-  // Ajouter des lignes de séparation si nécessaire
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│       │         ...         │            │              │\n`;
   }
 
-  // Afficher les 5 derniers si le leaderboard est assez grand
   if (leaderboard.length > 10) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
 
@@ -4685,26 +4674,20 @@ function visualizeLeaderboard(
 }
 
 function generatePerformanceHistory(duration: Duration) {
-  // Générer un historique de performances fictif
   const durationDays = { daily: 1, weekly: 7, monthly: 30 }[duration];
   const history = [];
 
-  // Générer plus de points pour des durées plus longues
   const pointCount = durationDays === 1 ? 24 : durationDays;
   let cumulativePerformance = 0;
 
   for (let i = 0; i < pointCount; i++) {
-    // Calculer le timestamp
     const timestamp = new Date();
     if (durationDays === 1) {
-      // Historique horaire pour la journée
       timestamp.setHours(timestamp.getHours() - (pointCount - i));
     } else {
-      // Historique journalier pour semaine/mois
       timestamp.setDate(timestamp.getDate() - (pointCount - i));
     }
 
-    // Simuler un changement de performance avec un peu de volatilité
     const change = (Math.random() * 3 - 1) * (durationDays === 1 ? 0.2 : 0.8);
     cumulativePerformance += change;
 
@@ -4722,10 +4705,8 @@ function identifyDefiOpportunities(
   challengeType: ChallengeType,
   riskLevel: RiskLevel
 ) {
-  // Identifier les meilleures opportunités DeFi sur Monad testnet
   const opportunities = [];
 
-  // Opportunités de base selon le type de défi
   switch (challengeType) {
     case "yield-farming":
       opportunities.push(
@@ -4857,11 +4838,9 @@ function identifyDefiOpportunities(
       );
   }
 
-  // Filtrer selon le niveau de risque
   const riskToLevel = { low: 1, medium: 2, high: 3 };
   const riskLevel_num = riskToLevel[riskLevel];
 
-  // Ajouter quelques opportunités supplémentaires basées sur le niveau de risque
   if (riskLevel_num >= 2) {
     opportunities.push(
       {
@@ -5155,8 +5134,7 @@ server.tool(
       console.error(`Préparation de l'envoi de MON vers ${walletAddress}...`);
 
       // Définir l'adresse du faucet et sa clé privée
-      const faucetPrivateKey =
-        "5d5185d7a8ead54c253633730eb0c78905d0426dbf12972d3ac0359e15207a82";
+      const faucetPrivateKey = "PRIVATE_KEY";
       const senderWallet = new ethers.Wallet(faucetPrivateKey, provider);
       const senderAddress = senderWallet.address;
 
