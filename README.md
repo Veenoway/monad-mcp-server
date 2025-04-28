@@ -54,6 +54,7 @@ Create a `.env` file in the root directory with the following variables:
 PINATA_JWT=PINATA_JWT
 OPENAI_API_KEY=OPENIA_KEY
 PRIVATE_KEY=YOUR_PRIVATE_KEY
+NFT_FACTORY_ADDRESS=NFT_FACTORY_ADDRESS=
 ```
 
 ## Important Notes About MCP Servers
@@ -308,6 +309,36 @@ Deployment arguments used:
 - Supported contract types: ERC20, Storage, SimpleStorage, and basic contracts
 
 # Prompt Guide - Generate Image & Mint NFT
+
+## DEPLOY A SIMPLE NFT SMART CONTRACT 
+
+Add the contract address & deployer private key into .env file.
+
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract VeenoXNFTFactory is ERC721URIStorage, Ownable {
+    uint256 public tokenCounter;
+
+    constructor() ERC721("VeenoX NFT", "VXNFT") Ownable(msg.sender) {
+        tokenCounter = 0;
+    }
+
+    function mint(string memory tokenURI, address to) external onlyOwner returns (uint256) {
+        uint256 newTokenId = tokenCounter;
+        _safeMint(to, newTokenId);
+        _setTokenURI(newTokenId, tokenURI);
+        tokenCounter += 1;
+        return newTokenId;
+    }
+}
+```
+
+
 
 ## Input Format
 
