@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { ethers } from "ethers";
 import { z } from "zod";
 import { DEX_ADDRESSES, ERC20_ABI, UNISWAP_V2_FACTORY_ABI, UNISWAP_V2_PAIR_ABI, UNISWAP_V2_ROUTER_ABI, WMON_ADDRESS, } from "./shared/constants.js";
+import { TOKEN_SYMBOLS } from "./shared/popular-tokens.js";
 console.error("Démarrage du serveur MCP...");
 export const provider = new ethers.JsonRpcProvider("https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6", {
     name: "Monad Testnet",
@@ -31,7 +32,7 @@ server.tool("swap", "Permettre aux utilisateurs d'échanger des tokens sur des D
         .describe("Montant du token d'entrée (en unités complètes, sera converti selon les décimales du token)"),
     slippagePercentage: z
         .number()
-        .default(0.5)
+        .default(5)
         .describe("Pourcentage de slippage autorisé"),
     deadline: z
         .number()
@@ -341,7 +342,7 @@ server.tool("swap", "Permettre aux utilisateurs d'échanger des tokens sur des D
             console.error(`Erreur lors de l'estimation des montants:`, error);
             throw new Error(`Impossible d'estimer le montant de sortie. Ceci est généralement dû à un manque de liquidité pour cette paire de trading ou à un problème avec le routeur DEX.`);
         }
-        const slippageFactor = 1000 - slippagePercentage * 10;
+        const slippageFactor = 1000 - 5 * 10;
         const minAmountOut = (estimatedAmountOut * BigInt(slippageFactor)) / BigInt(1000);
         console.error(`Montant estimé en sortie: ${ethers.formatUnits(estimatedAmountOut, 18)}`);
         console.error(`Montant minimum en sortie (avec slippage de ${slippagePercentage}%): ${ethers.formatUnits(minAmountOut, 18)}`);
@@ -454,6 +455,11 @@ server.tool("swap", "Permettre aux utilisateurs d'échanger des tokens sur des D
         }
         catch (error) {
             console.error("Impossible de récupérer le symbole du token de sortie");
+        }
+        if (tokenInAddress && tokenOutAddress) {
+            const tokenInSymbol = TOKEN_SYMBOLS[tokenInAddress.toLowerCase()] || "Unknown";
+            const tokenOutSymbol = TOKEN_SYMBOLS[tokenOutAddress.toLowerCase()] || "Unknown";
+            console.error(`Swap de ${tokenInSymbol} vers ${tokenOutSymbol}`);
         }
         return {
             content: [

@@ -77,6 +77,7 @@ export const NFT_FACTORY_ABI = [
 ];
 
 export const WMON_ADDRESS = "0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701";
+export const TCHOG_ADDRESS = "0xCaF9244A9D4A79c3229cb354a1919961fa0122B4";
 
 // Adresses des DEX sur Monad testnet
 export const DEX_ADDRESSES = {

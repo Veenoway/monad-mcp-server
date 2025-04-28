@@ -10,7 +10,7 @@ import axios from "axios";
 import { ethers } from "ethers";
 import FormData from "form-data";
 import { z } from "zod";
-import { NFT_FACTORY_ABI, NFT_FACTORY_ADDRESS } from "./shared/constants.js";
+import { NFT_FACTORY_ABI } from "./shared/constants.js";
 console.error("Starting MCP server...");
 export const provider = new ethers.JsonRpcProvider("https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6", {
     name: "Monad Testnet",
@@ -103,8 +103,8 @@ async ({ prompt, userAddress }, _extra) => {
         console.error(`Metadata uploaded: ${tokenURI}`);
         // MINT NFT
         console.error("Minting NFT on Monad Testnet...");
-        const deployerWallet = new ethers.Wallet("5d5185d7a8ead54c253633730eb0c78905d0426dbf12972d3ac0359e15207a82", provider);
-        const nftContract = new ethers.Contract(NFT_FACTORY_ADDRESS, NFT_FACTORY_ABI, deployerWallet);
+        const deployerWallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+        const nftContract = new ethers.Contract(process.env.NFT_FACTORY_ADDRESS, NFT_FACTORY_ABI, deployerWallet);
         const mintTx = await nftContract.mint(tokenURI, userAddress, {
             gasLimit: 500_000,
         });
