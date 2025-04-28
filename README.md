@@ -1,183 +1,827 @@
-# Monad MCP Tutorial
+# Prompt Guide - Monad Faucet
 
-This project is an MCP (Model Context Protocol) server for interacting with the Monad testnet blockchain. It provides several tools to facilitate development and interactions with the blockchain.
+## Input Format
 
-## Features
-
-The MCP server provides the following functionalities:
-
-### Smart Contracts
-
-- **deploy-solidity-source**: Compile and deploy Solidity source code directly to the Monad testnet.
-
-### NFTs
-
-- **get-nft-holders**: Retrieve the list of holders of a specific NFT (ERC721 or ERC1155).
-
-### DeFi
-
-- **token-swap**: Exchange tokens on DEXs available on Monad testnet (Uniswap, SushiSwap).
-
-## Installation
-
-1. Clone this repository
-2. Install dependencies with `npm install`
-3. Run the server with `npm start`
-
-## Prompt Examples for Claude
-
-Here are examples of prompts you can send to Claude to use the MCP tools:
-
-### Get NFT Holders
-
-```
-Get the list of NFT holders for contract 0xNFT_Contract_Address on Monad testnet. It's an ERC721 contract. Limit to 20 holders.
-```
-
-For a specific token:
-
-```
-Who owns the NFT with token ID 123 in contract 0xNFT_Contract_Address on Monad testnet? It's an ERC721 contract.
-```
-
-### Token Swapping on DEX
-
-To check available liquidity before swapping:
-
-```
-Check liquidity for token 0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701 on Uniswap on Monad testnet. I want to swap 0.1 MON. Here's my private key: YOUR_PRIVATE_KEY
-```
-
-To swap MON for a token:
-
-```
-Swap 0.1 MON for tokens at address 0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701 on Uniswap on Monad testnet. Use 1% slippage. Here's my private key: YOUR_PRIVATE_KEY
-```
-
-To swap between two tokens:
-
-```
-Swap 10 tokens from TCHOG to WMON on Uniswap on Monad testnet. Use 0.5% slippage. Here's my private key: YOUR_PRIVATE_KEY
-```
-
-### Creating a Smart contract and deploy it ( could be anything )
-
-```
-Create a NFT smart contract with whitelist. The whitelist should last 1 day then turn into public sale. Total supply should be 1000, name should be NoveeNFT with symbol NOV. Public price should be 10 MON, whitelist price 0.2 MON.
-
-Then deploy it using my private key: YOUR_PRIVATE_KEY
-```
-
-## DEX Configuration
-
-The DEX addresses on Monad testnet are configured as follows:
-
-- **Uniswap V2 Router**: 0xfb8e1c3b833f9e67a71c859a132cf783b645e436
-- **Uniswap V2 Factory**: 0x733e88f248b742db6c14c0b1713af5ad7fdd59d0
-- **Uniswap V3 Factory**: 0x961235a9020b05c44df1026d956d1f4d78014276
-- **Uniswap Universal Router**: 0x3ae6d8a282d67893e17aa70ebffb33ee5aa65893
-
-## Integration with Claude Desktop
-
-1. Open Claude Desktop
-2. Go to Settings > Developer
-3. Open `claude_desktop_config.json`
-4. Add the following configuration:
+### JSON Request
 
 ```json
 {
-  "mcpServers": {
-    "monad-mcp": {
-      "command": "node",
-      "args": ["/<path-to-project>/build/index.js"]
-    }
+  "tool": "monad-faucet",
+  "parameters": {
+    "walletAddress": "0xYourWalletAddress"
   }
 }
 ```
 
-5. Restart Claude Desktop
+### Natural Prompt Examples
 
-## Sample NFT Contract Output
+```
+I want MON tokens sent to my address: 0x1234567890123456789012345678901234567890
+```
 
-When you ask Claude to create an NFT contract with whitelist, it will generate something like this:
+```
+Send me 0.2 MON to: 0x1234567890123456789012345678901234567890
+```
 
-```solidity
+```
+I need tokens for testing on Monad Testnet. My address: 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "✅ 0.2 MON successfully sent to 0xYourWalletAddress\nTransaction: 0xTransactionHash\nSent from: 0xFaucetAddress"
+    }
+  ]
+}
+```
+
+# Prompt Guide - Deploy Solidity Contract
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "deploy-solidity",
+  "parameters": {
+    "privateKey": "0xYourPrivateKey",
+    "sourceCode": "// Your Solidity contract code here",
+    "constructorArgs": ["arg1", "arg2"]
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+Deploy a NFT smart contract
+Smart contract should include:
+WL phase wich last 24 hours and switch to public, 1000 total supply, WL price: 0.3 MON, public price 10 MON.
+to Monad testnet with my private key: <your_private_key>
+
+```
+
+```
+Deploy this ERC20 token contract with initial supply of 1000000 tokens. My private key: 0x1234567890123456789012345678901234567890
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract NoveeNFT is ERC721, Ownable {
-    using Strings for uint256;
-
-    uint256 public constant MAX_SUPPLY = 1000;
-    uint256 public constant WL_PRICE = 0.2 ether;
-    uint256 public constant PUBLIC_PRICE = 10 ether;
-
-    uint256 public totalSupply;
-    uint256 public whitelistEndTime;
-    string public baseURI;
-
-    mapping(address => bool) public whitelist;
-
-    constructor() ERC721("NoveeNFT", "NOV") Ownable(msg.sender) {
-        whitelistEndTime = block.timestamp + 1 days;
-    }
-
-    function addToWhitelist(address[] calldata addresses) external onlyOwner {
-        for (uint256 i = 0; i < addresses.length; i++) {
-            whitelist[addresses[i]] = true;
-        }
-    }
-
-    function mint(uint256 quantity) external payable {
-        require(totalSupply + quantity <= MAX_SUPPLY, "Exceeds max supply");
-
-        uint256 price;
-        if (block.timestamp < whitelistEndTime) {
-            require(whitelist[msg.sender], "Not whitelisted");
-            price = WL_PRICE;
-        } else {
-            price = PUBLIC_PRICE;
-        }
-
-        require(msg.value >= price * quantity, "Insufficient payment");
-
-        for (uint256 i = 0; i < quantity; i++) {
-            uint256 tokenId = totalSupply + 1;
-            _safeMint(msg.sender, tokenId);
-            totalSupply++;
-        }
-    }
-
-    function setBaseURI(string calldata _baseURI) external onlyOwner {
-        baseURI = _baseURI;
-    }
-
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "Token does not exist");
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
-    }
-
-    function withdraw() external onlyOwner {
-        (bool success, ) = payable(owner()).call{value: address(this).balance}("");
-        require(success, "Withdrawal failed");
+contract MyToken is ERC20 {
+    constructor(uint256 initialSupply) ERC20("MyToken", "MTK") {
+        _mint(msg.sender, initialSupply);
     }
 }
 ```
 
-## About MCP
+## Output Format
 
-Model Context Protocol (MCP) is a standard that allows AI models to interact with external tools and services. In this project, we create an MCP server that allows Claude to interact with the Monad blockchain.
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Contract deployed and verified successfully!
 
-## Resources
+Contract address: 0xContractAddress
+Transaction hash: 0xTransactionHash
+Block: 123456
+Gas used: 123456
 
-- [Monad Documentation](https://docs.monad.xyz/)
-- [Monad Testnet Explorer](https://testnet.monadexplorer.com/)
-- [MCP Documentation](https://modelcontextprotocol.io/introduction)
+Your contract is deployed and verified on Monad testnet.
+You can view your verified contract here: https://testnet.monadexplorer.com/address/0xContractAddress
 
-## License
+Deployment arguments used:
+- Argument 1: 1000000"
+    }
+  ]
+}
+```
 
-MIT
+## Important Notes
+
+- Private key must be valid and have sufficient MON balance (at least 0.01 MON)
+- Source code must be valid Solidity code
+- Constructor arguments are optional but must match the contract's constructor parameters
+- Contract will be automatically verified if possible
+- Supported contract types: ERC20, Storage, SimpleStorage, and basic contracts
+
+# Prompt Guide - Generate Image & Mint NFT
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "image-nft-generation",
+  "parameters": {
+    "prompt": "Description of the image to generate",
+    "userAddress": "0xYourWalletAddress"
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+Generate an image of a futuristic city with flying cars and mint it as an NFT to my address: 0x1234567890123456789012345678901234567890
+```
+
+```
+Create a digital art piece of a cyberpunk cat and send it to my wallet: 0x1234567890123456789012345678901234567890
+```
+
+```
+I want an NFT of a magical forest with glowing mushrooms. My address is: 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+### Success
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "✅ Image generated and minted as NFT for **0xYourWalletAddress**!
+
+- **Prompt**: \"Your image description\"
+- **IPFS Image**: [View image](https://gateway.pinata.cloud/ipfs/YourImageHash)
+- **Token URI**: ipfs://YourMetadataHash
+- **Transaction**: [View on Monad Explorer](https://testnet.monadexplorer.com/tx/YourTransactionHash)"
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Prompt length is limited to 1000 characters
+- Images are generated at 1024x1024 resolution
+- Generated images are automatically uploaded to IPFS
+- NFTs are minted on Monad Testnet
+- Each image is unique and generated using DALL-E 2
+- The NFT includes metadata with generation date and prompt information
+
+# Prompt Guide - Token Swap
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "swap",
+  "parameters": {
+    "privateKey": "0xYourPrivateKey",
+    "routerType": "uniswap", // or "sushiswap"
+    "tokenInAddress": "0xTokenInAddress", // Optional for native MON swaps
+    "tokenOutAddress": "0xTokenOutAddress",
+    "amountIn": "1.0", // Amount in full units
+    "slippagePercentage": 0.5, // Optional, default 0.5%
+    "deadline": 1234567890, // Optional, Unix timestamp
+    "useNativeMON": false, // Optional, default false
+    "checkLiquidityOnly": false // Optional, default false
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+Swap 1 WMON for TCHOG tokens on Uniswap. My private key: 0x1234567890123456789012345678901234567890
+```
+
+```
+Exchange 10 TCHOG tokens for WMON on Uniswap with 1% slippage. My private key: 0x1234567890123456789012345678901234567890
+```
+
+```
+Check liquidity for swapping 0.5 WMON to TCHOG on Uniswap. My private key: 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+### Success
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Token swap successful!
+
+From: 1.0 MON
+To: 100.0 TCHOG (estimated)
+
+Transaction: 0xTransactionHash
+Block: 123456
+DEX used: uniswap
+Swap path: MON -> Token(0x1234...5678)
+
+You can view your transaction here:
+https://testnet.monadexplorer.com/tx/0xTransactionHash"
+    }
+  ]
+}
+```
+
+### Liquidity Check
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Liquidity check for pools on uniswap:
+
+Direct pool MON -> TCHOG: Exists
+Liquidity: 1000 MON <-> 100000 TCHOG
+Pool address: 0xPoolAddress
+
+Recommended path: Direct
+
+Popular tokens available on uniswap:
+1. TCHOG (0xTokenAddress)
+2. WMON (0xTokenAddress)
+
+If you want to create liquidity, you'll need to add tokens to the pools via the DEX interface."
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Supports both Uniswap and SushiSwap
+- Can swap between any ERC20 tokens or native MON
+- Automatic path finding (direct or via MON)
+- Slippage protection with configurable percentage
+- Optional liquidity check before swapping
+- Supports both token-to-token and token-to-MON swaps
+
+# Prompt Guide - AI Trading Agent
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "monad-ai-trader",
+  "parameters": {
+    "privateKey": "0xYourPrivateKey",
+    "initialInvestment": 0.1, // Optional, default 0.1 MON
+    "riskLevel": "moderate", // Optional, "conservative" | "moderate" | "aggressive"
+    "learningRate": 0.1, // Optional, default 0.1
+    "maxSlippage": 1.5, // Optional, default 1.5%
+    "action": "create" // "create" | "start" | "stop" | "status" | "improve"
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+Create an AI trading agent with 0.5 MON initial investment and moderate risk. My private key: 0x1234567890123456789012345678901234567890
+```
+
+```
+Start my AI trading agent with aggressive risk profile. My private key: 0x1234567890123456789012345678901234567890
+```
+
+```
+Check the status of my AI trading agent. My private key: 0x1234567890123456789012345678901234567890
+```
+
+```
+Improve my AI trading agent's strategy. My private key: 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+### Agent Creation
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "🤖 AUTONOMOUS AI TRADING AGENT CREATED
+
+ID: ai-trader-123456
+Address: 0xAgentAddress
+Balance: 0.5 MON
+Status: active
+Risk Level: MODERATE
+
+✅ AI Agent created successfully
+Initial capital: 0.5 MON
+✅ Initial purchase: 0.25 WMON → TCHOG
+Hash: 0xTransactionHash
+
+To start the agent: monad-ai-trader-autonomous --action=start --privateKey=0x123..."
+    }
+  ]
+}
+```
+
+### Trading Action
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "🤖 AUTONOMOUS AI TRADING AGENT STARTED
+
+ID: ai-trader-123456
+Address: 0xAgentAddress
+Balance: 0.45 MON
+Status: active
+Risk Level: MODERATE
+
+✅ Transaction executed: BUY 10 TCHOG
+Confidence: 75.50%
+Hash: 0xTransactionHash"
+    }
+  ]
+}
+```
+
+### Status Check
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "🤖 AUTONOMOUS AI TRADING AGENT STATUS
+
+ID: ai-trader-123456
+Address: 0xAgentAddress
+Balance: 0.45 MON
+Status: active
+Risk Level: MODERATE
+
+📊 AI AGENT STATUS
+Total transactions: 5
+Learning rate: 0.1
+Exploration rate: 0.200
+Last improvement: 2024-03-20T12:00:00Z
+
+STRATEGY PARAMETERS:
+- Position size: 25.00%
+- Entry threshold: 0.60
+- Stop loss: 10.00%
+- Take profit: 15.00%"
+    }
+  ]
+}
+```
+
+### Error
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "❌ Error executing autonomous AI agent: [Detailed error message]
+
+Suggestions:
+1. Verify that your private key is correct
+2. Ensure you have sufficient MON for the initial investment
+3. Verify that the agent exists if you're using an action other than 'create'
+4. If the agent is already active, use 'status' to check its state"
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- The AI agent automatically trades between WMON and TCHOG on Monad Testnet
+- Uses technical analysis and machine learning for decision making
+- Supports three risk levels: conservative, moderate, aggressive
+- Automatically improves based on past performance
+- Executes real transactions on the network
+- Checks liquidity before each transaction
+- Includes loss protection mechanisms (stop loss)
+- Transactions are verifiable on Monad Explorer
+
+# Prompt Guide - Smart Contract Analysis
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "analyze-smart-contract",
+  "parameters": {
+    "contractAddress": "0xContractAddress",
+    "startBlock": 1000000, // Optional
+    "privateKey": "0xYourPrivateKey", // Optional, required for simulation
+    "simulateLoad": false, // Optional, default false
+    "traceFunctions": true, // Optional, default true
+    "visualizeActivity": true, // Optional, default true
+    "gasAnalysis": true, // Optional, default true
+    "securityScan": true, // Optional, default true
+    "monitorDuration": 10 // Optional, monitoring duration in blocks
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+Analyze the contract at address 0x1234567890123456789012345678901234567890
+```
+
+```
+Simulate high load on contract 0x1234567890123456789012345678901234567890 with my private key 0xabcdef1234567890
+```
+
+```
+Check the security of contract 0x1234567890123456789012345678901234567890
+```
+
+```
+Analyze gas usage of contract 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+### Complete Analysis
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "## Smart Contract Analysis Report
+
+**Contract Address**: 0xContractAddress
+**Code Size**: 12345 bytes
+**Balance**: 1.5 MON
+**Transaction Count**: 1000
+**Detected Standards**: ERC20, OpenZeppelin
+
+### Contract Functions
+1. `transfer(address,uint256)`
+2. `approve(address,uint256)`
+3. `balanceOf(address)`
+
+### Activity Analysis
+**Total Transactions**: 1000
+**Unique Callers**: 50
+**Average Gas Used**: 45000
+
+**Temporal Distribution**:
+- Last 24h: 100 transactions
+- Last Week: 500 transactions
+- Last Month: 1000 transactions
+
+### Gas Analysis
+**Total Gas Used**: 45000000
+**Average Gas per Call**: 45000
+**Estimated Cost**: 0.045 MON
+**Gas Efficiency**: Good
+
+### Security Analysis
+**Security Score**: 85/100
+**Risk Level**: Low
+
+**Security Recommendations**:
+1. Implement reentrancy protection
+2. Use SafeMath for arithmetic operations
+3. Add appropriate access controls"
+    }
+  ]
+}
+```
+
+### Load Simulation
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "## Load Simulation Results
+
+**Sent Transactions**: 100
+**Success Rate**: 95%
+**Average Gas Used**: 45000
+
+**Performance Metrics**:
+- Transactions per Second: 10.5
+- Average Confirmation Time: 2.5 seconds
+- Average Gas Price: 1.2 gwei"
+    }
+  ]
+}
+```
+
+### Error
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "❌ Error analyzing contract: [Detailed error message]
+
+Suggestions:
+1. Verify that the contract address is correct
+2. Ensure the contract exists on Monad Testnet
+3. Verify your private key is correct if performing simulation
+4. If the contract is a proxy, ensure you're using the implementation address"
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Analysis includes verification of ERC20, ERC721, and ERC1155 standards
+- Load simulation requires a valid private key
+- Security analysis detects common vulnerabilities
+- Real-time monitoring is limited to 100 blocks maximum
+- Activity visualizations are generated for the last 24 hours
+- Gas analysis includes optimization recommendations
+- Results are based on Monad Testnet data
+
+# Prompt Guide - NFT Holders
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "nft-holders",
+  "parameters": {
+    "contractAddress": "0xContractAddress",
+    "tokenId": "123", // Optional
+    "standard": "ERC721", // "ERC721" | "ERC1155"
+    "limit": 100 // Optional, default 100
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+Find holders of the NFT at address 0x1234567890123456789012345678901234567890
+```
+
+```
+List holders of token ID 123 from ERC721 contract 0x1234567890123456789012345678901234567890
+```
+
+```
+Who owns token ID 456 from ERC1155 contract 0x1234567890123456789012345678901234567890
+```
+
+```
+Show me the top 50 holders of NFT 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+### Holders List
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "NFT Holders for Monad Collection (MON) at address 0xContractAddress:
+
+1. 0xHolder1: 5 token(s) - IDs: [1, 2, 3, 4, 5]
+2. 0xHolder2: 3 token(s) - IDs: [6, 7, 8]
+3. 0xHolder3: 1 token(s) - IDs: [9]"
+    }
+  ],
+  "contractAddress": "0xContractAddress",
+  "standard": "ERC721",
+  "name": "Monad Collection",
+  "symbol": "MON",
+  "tokenId": "all",
+  "holderCount": 3,
+  "holders": [
+    {
+      "address": "0xHolder1",
+      "tokens": [1, 2, 3, 4, 5],
+      "tokenCount": 5
+    },
+    {
+      "address": "0xHolder2",
+      "tokens": [6, 7, 8],
+      "tokenCount": 3
+    },
+    {
+      "address": "0xHolder3",
+      "tokens": [9],
+      "tokenCount": 1
+    }
+  ]
+}
+```
+
+### Error
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "❌ Error retrieving NFT holders: [Detailed error message]
+
+Suggestions:
+1. Verify that the contract address is correct
+2. Ensure the contract implements the specified NFT standard
+3. For ERC1155 contracts, you must specify a tokenId
+4. Verify that the contract exists on Monad Testnet"
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Supports ERC721 and ERC1155 standards
+- For ERC1155, a specific tokenId is required
+- Results are sorted by token count (descending)
+- Default limit is 100 holders
+- Tokens are listed by ID in ascending order
+- Collection name and symbol are displayed if available
+- Results include total holder count
+- Data is based on contract transfer events
+- Balances are verified in real-time for accuracy
+
+# Prompt Guide - Portfolio Analysis
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "portfolio",
+  "parameters": {
+    "address": "0xWalletAddress",
+    "includeErc20": true, // Optional, default true
+    "includeNfts": true, // Optional, default true
+    "includeLiquidityPositions": true, // Optional, default true
+    "includeTransactionHistory": true, // Optional, default true
+    "transactionLimit": 10, // Optional, default 10
+    "erc20TokensLimit": 50, // Optional, default 50
+    "nftsLimit": 20 // Optional, default 20
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+Analyze the portfolio of address 0x1234567890123456789012345678901234567890
+```
+
+```
+Show me the last 20 transactions of 0x1234567890123456789012345678901234567890
+```
+
+```
+What are the NFTs and ERC20 tokens of 0x1234567890123456789012345678901234567890
+```
+
+```
+Show liquidity positions of 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+### Complete Analysis
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Portfolio analysis for address 0xWalletAddress"
+    },
+    {
+      "type": "text",
+      "text": {
+        "nativeBalance": "1.5 MON",
+        "erc20Tokens": [
+          {
+            "address": "0xToken1",
+            "name": "Token One",
+            "symbol": "TKN1",
+            "balance": "100.0"
+          },
+          {
+            "address": "0xToken2",
+            "name": "Token Two",
+            "symbol": "TKN2",
+            "balance": "50.0"
+          }
+        ],
+        "nfts": {
+          "erc721": [
+            {
+              "contractAddress": "0xNFT1",
+              "collectionName": "Monad Collection",
+              "symbol": "MON",
+              "tokenId": "1",
+              "tokenURI": "ipfs://..."
+            }
+          ],
+          "erc1155": [
+            {
+              "contractAddress": "0xNFT2",
+              "tokenId": "2",
+              "balance": "5",
+              "uri": "ipfs://..."
+            }
+          ]
+        },
+        "liquidityPositions": [
+          {
+            "pairAddress": "0xPair1",
+            "token0": {
+              "address": "0xToken1",
+              "symbol": "TKN1",
+              "amount": "10.0"
+            },
+            "token1": {
+              "address": "0xToken2",
+              "symbol": "TKN2",
+              "amount": "20.0"
+            },
+            "lpBalance": "15.0",
+            "shareOfPool": "0.5%"
+          }
+        ],
+        "transactions": [
+          {
+            "hash": "0xTx1",
+            "from": "0xWalletAddress",
+            "to": "0xRecipient",
+            "value": "0.1 MON",
+            "timestamp": "2024-03-20T12:00:00Z",
+            "status": "Success",
+            "gasUsed": "21000"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Error
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "❌ Error analyzing portfolio: [Detailed error message]
+
+Suggestions:
+1. Verify that the wallet address is correct
+2. Ensure the address exists on Monad Testnet
+3. Verify that the limit parameters are valid
+4. If the error persists, try analyzing specific portfolio sections"
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Analysis includes native MON balance
+- Supports ERC20 tokens, ERC721 and ERC1155 NFTs
+- Detects liquidity positions on DEXs
+- Includes recent transaction history
+- Limits are configurable for each asset type
+- Results include token metadata (name, symbol, URI)
+- Liquidity positions include pool share
+- Transactions include status and gas usage
+- Data is based on on-chain events
+- Balances are verified in real-time
