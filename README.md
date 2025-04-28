@@ -27,7 +27,7 @@ A MCP (Model Context Protocol) server for interacting with the Monad blockchain,
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/monad-mcp-server.git
+git clone https://github.com/veenoway/monad-mcp-server.git
 cd monad-mcp-server
 ```
 
