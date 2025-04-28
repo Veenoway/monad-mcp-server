@@ -421,7 +421,7 @@ I want an NFT of a magical forest with glowing mushrooms. My address is: 0x12345
 ### Natural Prompt Examples
 
 ```
-Swap 1 WMON for TCHOG tokens on Uniswap. My private key: 0x1234567890123456789012345678901234567890
+Swap 0.1 WMON (0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701) to TCHOG (0xCaF9244A9D4A79c3229cb354a1919961fa0122B4) My private key: 0x1234567890123456789012345678901234567890
 ```
 
 ```
