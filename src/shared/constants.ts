@@ -76,8 +76,6 @@ export const NFT_FACTORY_ABI = [
   "function ownerOf(uint256 tokenId) view returns (address)",
 ];
 
-// Adresses des contrats sur Monad testnet
-export const NFT_FACTORY_ADDRESS = "0x0b17A7Fba7a5c20608608aF6e5e8C5ed0440D744";
 export const WMON_ADDRESS = "0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701";
 
 // Adresses des DEX sur Monad testnet

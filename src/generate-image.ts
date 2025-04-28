@@ -13,7 +13,7 @@ import axios from "axios";
 import { ethers } from "ethers";
 import FormData from "form-data";
 import { z } from "zod";
-import { NFT_FACTORY_ABI, NFT_FACTORY_ADDRESS } from "./shared/constants.js";
+import { NFT_FACTORY_ABI } from "./shared/constants.js";
 
 console.error("Starting MCP server...");
 
@@ -148,11 +148,11 @@ server.tool(
       console.error("Minting NFT on Monad Testnet...");
 
       const deployerWallet = new ethers.Wallet(
-        "5d5185d7a8ead54c253633730eb0c78905d0426dbf12972d3ac0359e15207a82"!,
+        process.env.PRIVATE_KEY!,
         provider
       );
       const nftContract = new ethers.Contract(
-        NFT_FACTORY_ADDRESS,
+        process.env.NFT_FACTORY_ADDRESS!,
         NFT_FACTORY_ABI,
         deployerWallet
       );
