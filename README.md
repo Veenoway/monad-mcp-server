@@ -51,37 +51,10 @@ cp .env.example .env
 Create a `.env` file in the root directory with the following variables:
 
 ```env
-# Network Configuration
-NETWORK_RPC_URL=https://testnet.monad.xyz
-CHAIN_ID=1234
-
-# Wallet Configuration
-PRIVATE_KEY=your_private_key_here
-WALLET_ADDRESS=your_wallet_address_here
-
-# API Keys (if needed)
-INFURA_API_KEY=your_infura_key_here
-ETHERSCAN_API_KEY=your_etherscan_key_here
-
-# MCP Server Configuration
-MCP_SERVER_PORT=3000
-MCP_SERVER_HOST=localhost
-
-# Token Addresses
-MON_TOKEN_ADDRESS=0xYourMonTokenAddress
-TCHOG_TOKEN_ADDRESS=0xYourTchogTokenAddress
-
-# DEX Configuration
-UNISWAP_ROUTER_ADDRESS=0xYourUniswapRouterAddress
-SUSHISWAP_ROUTER_ADDRESS=0xYourSushiswapRouterAddress
-
-# Staking Configuration
-STAKING_CONTRACT_ADDRESS=0xYourStakingContractAddress
-UNSTAKING_COOLDOWN=604800 # 7 days in seconds
-
-# NFT Configuration
-NFT_CONTRACT_ADDRESS=0xYourNftContractAddress
-IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs/
+PINATA_JWT=PINATA_JWT
+OPENAI_API_KEY=OPENIA_KEY
+PRIVATE_KEY=YOUR_PRIVATE_KEY
+NFT_FACTORY_ADDRESS=NFT_FACTORY_ADDRESS=
 ```
 
 ## Important Notes About MCP Servers
@@ -220,60 +193,6 @@ yarn build
 yarn start
 ```
 
-## Usage
-
-The server accepts JSON requests via stdin/stdout. Here's an example:
-
-```bash
-echo '{
-  "tool": "monad-faucet",
-  "parameters": {
-    "walletAddress": "0xYourWalletAddress"
-  }
-}' | node dist/index.js
-```
-
-## Project Structure
-
-```
-monad-mcp-server/
-├── src/
-│   ├── tools/           # Implementations of various tools
-│   ├── utils/           # Utilities and helpers
-│   ├── types/           # TypeScript definitions
-│   └── index.ts         # Entry point
-├── tests/               # Unit and integration tests
-├── .env.example         # Example configuration
-├── package.json         # Dependencies and scripts
-└── tsconfig.json        # TypeScript configuration
-```
-
-## Tool Documentation
-
-See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each tool's usage.
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For questions or issues, please:
-
-- Open an issue on GitHub
-- Join our [Discord](https://discord.gg/monad)
-- Contact us on [Twitter](https://twitter.com/MonadDeFi)
-
 # Prompt Guide - Monad Faucet
 
 ## Input Format
@@ -390,6 +309,34 @@ Deployment arguments used:
 - Supported contract types: ERC20, Storage, SimpleStorage, and basic contracts
 
 # Prompt Guide - Generate Image & Mint NFT
+
+## DEPLOY A SIMPLE NFT SMART CONTRACT
+
+Add the contract address & deployer private key into .env file.
+
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract VeenoXNFTFactory is ERC721URIStorage, Ownable {
+    uint256 public tokenCounter;
+
+    constructor() ERC721("VeenoX NFT", "VXNFT") Ownable(msg.sender) {
+        tokenCounter = 0;
+    }
+
+    function mint(string memory tokenURI, address to) external onlyOwner returns (uint256) {
+        uint256 newTokenId = tokenCounter;
+        _safeMint(to, newTokenId);
+        _setTokenURI(newTokenId, tokenURI);
+        tokenCounter += 1;
+        return newTokenId;
+    }
+}
+```
 
 ## Input Format
 
