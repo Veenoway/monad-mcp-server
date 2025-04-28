@@ -51,37 +51,9 @@ cp .env.example .env
 Create a `.env` file in the root directory with the following variables:
 
 ```env
-# Network Configuration
-NETWORK_RPC_URL=https://testnet.monad.xyz
-CHAIN_ID=1234
-
-# Wallet Configuration
-PRIVATE_KEY=your_private_key_here
-WALLET_ADDRESS=your_wallet_address_here
-
-# API Keys (if needed)
-INFURA_API_KEY=your_infura_key_here
-ETHERSCAN_API_KEY=your_etherscan_key_here
-
-# MCP Server Configuration
-MCP_SERVER_PORT=3000
-MCP_SERVER_HOST=localhost
-
-# Token Addresses
-MON_TOKEN_ADDRESS=0xYourMonTokenAddress
-TCHOG_TOKEN_ADDRESS=0xYourTchogTokenAddress
-
-# DEX Configuration
-UNISWAP_ROUTER_ADDRESS=0xYourUniswapRouterAddress
-SUSHISWAP_ROUTER_ADDRESS=0xYourSushiswapRouterAddress
-
-# Staking Configuration
-STAKING_CONTRACT_ADDRESS=0xYourStakingContractAddress
-UNSTAKING_COOLDOWN=604800 # 7 days in seconds
-
-# NFT Configuration
-NFT_CONTRACT_ADDRESS=0xYourNftContractAddress
-IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs/
+PINATA_JWT=PINATA_JWT
+OPENAI_API_KEY=OPENIA_KEY
+PRIVATE_KEY=YOUR_PRIVATE_KEY
 ```
 
 ## Important Notes About MCP Servers
