@@ -1,3 +1,97 @@
+# Monad MCP Server
+
+A MCP (Model Context Protocol) server for interacting with the Monad blockchain, offering a comprehensive suite of DeFi tools and blockchain functionalities.
+
+## Features
+
+- 🚰 Monad Faucet - Get MON tokens for the testnet
+- 📝 Solidity Contract Deployment
+- 🎨 Image Generation & NFT Minting
+- 💱 Token Swap
+- 🤖 Autonomous AI Trading Agent
+- 🔍 Smart Contract Analysis
+- 👥 NFT Holders Analysis
+- 📊 Portfolio Analysis
+- 🏆 Competitive DeFi Challenges
+
+## Prerequisites
+
+- Node.js v18 or higher
+- npm or yarn
+- A private key for Monad testnet
+
+## Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/your-username/monad-mcp-server.git
+cd monad-mcp-server
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Configure environment variables:
+
+```bash
+cp .env.example .env
+# Edit the .env file with your configurations
+```
+
+## Starting the Server
+
+1. Start the server in development mode:
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+2. For production:
+
+```bash
+npm run build
+npm start
+# or
+yarn build
+yarn start
+```
+
+## Usage
+
+The server accepts JSON requests via stdin/stdout. Here's an example:
+
+```bash
+echo '{
+  "tool": "monad-faucet",
+  "parameters": {
+    "walletAddress": "0xYourWalletAddress"
+  }
+}' | node dist/index.js
+```
+
+## Project Structure
+
+```
+monad-mcp-server/
+├── src/
+│   ├── tools/           # Implementations of various tools
+│   ├── utils/           # Utilities and helpers
+│   ├── types/           # TypeScript definitions
+│   └── index.ts         # Entry point
+├── tests/               # Unit and integration tests
+├── .env.example         # Example configuration
+├── package.json         # Dependencies and scripts
+└── tsconfig.json        # TypeScript configuration
+```
+
 # Prompt Guide - Monad Faucet
 
 ## Input Format
@@ -825,3 +919,151 @@ Suggestions:
 - Transactions include status and gas usage
 - Data is based on on-chain events
 - Balances are verified in real-time
+
+# Prompt Guide - Monad DeFi Challenge
+
+## Overview
+
+The Monad DeFi Challenge is a competitive platform that allows users to participate in various DeFi activities on the Monad testnet, compare their performance with other users, and earn rewards.
+
+## Challenge Types
+
+### 1. Yield Farming
+
+- Focus on maximizing yield through various farming strategies
+- Support for different risk levels (low, medium, high)
+- Automatic portfolio rebalancing available
+
+### 2. Trading
+
+- Competitive trading challenges
+- Support for different trading strategies
+- Performance tracking and leaderboard
+
+### 3. Liquidity Mining
+
+- Provide liquidity to different pools
+- Earn rewards based on performance
+- Risk management tools
+
+### 4. Staking
+
+- Network staking challenges
+- Governance participation
+- Protocol staking options
+
+## Features
+
+### Risk Management
+
+- Three risk levels: Low, Medium, High
+- Automatic risk assessment
+- Portfolio diversification recommendations
+
+### Performance Tracking
+
+- Real-time performance monitoring
+- Historical performance analysis
+- Comparative analytics with other participants
+
+### Rewards System
+
+- Daily, weekly, and monthly challenges
+- Reward pool distribution
+- Entry fee structure based on duration
+
+### Technical Features
+
+- Gas optimization
+- Transaction speed monitoring
+- Smart contract security analysis
+
+## API Integration
+
+### JSON Request Format
+
+```json
+{
+  "tool": "defi-challenges",
+  "parameters": {
+    "privateKey": "0xYourPrivateKey",
+    "challengeType": "yield-farming",
+    "duration": "weekly",
+    "publicUsername": "optional_username",
+    "initialInvestment": "1.0",
+    "riskLevel": "medium",
+    "joinPool": true,
+    "teamName": "optional_team_name",
+    "specificStrategies": ["strategy1", "strategy2"],
+    "autoRebalance": true,
+    "notificationsEnabled": true
+  }
+}
+```
+
+### Response Format
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Challenge details and results"
+    }
+  ],
+  "challengeSummary": {
+    "challengeId": "unique_id",
+    "participant": {
+      "username": "user_name",
+      "wallet": "wallet_address",
+      "team": "team_name"
+    },
+    "challenge": {
+      "type": "challenge_type",
+      "duration": "challenge_duration",
+      "riskLevel": "risk_level",
+      "startedAt": "timestamp",
+      "endsAt": "timestamp",
+      "initialInvestment": "amount",
+      "joinedRewardsPool": true,
+      "entryFee": "fee_amount",
+      "autoRebalancing": true
+    },
+    "strategy": {
+      "selectedStrategies": ["strategy1", "strategy2"],
+      "initialAllocation": [
+        {
+          "asset": "asset_name",
+          "percentage": 50,
+          "amount": "amount"
+        }
+      ],
+      "projectedAPY": "percentage",
+      "projectedROI": "percentage"
+    },
+    "ranking": {
+      "currentParticipants": 100,
+      "yourEstimatedRank": 25,
+      "topPerformers": [
+        {
+          "rank": 1,
+          "username": "top_user",
+          "performance": 15.5,
+          "strategy": "winning_strategy"
+        }
+      ]
+    },
+    "rewards": {
+      "totalPoolSize": "pool_size",
+      "estimatedRewards": "reward_amount",
+      "rewardsBreakdown": [
+        {
+          "position": "1st Place",
+          "amount": "reward_amount",
+          "chance": "percentage"
+        }
+      ]
+    }
+  }
+}
+```
