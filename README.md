@@ -793,7 +793,7 @@ Suggestions:
 
 ```json
 {
-  "tool": "nft-holders",
+  "tool": "nft-top-holders",
   "parameters": {
     "contractAddress": "0xContractAddress",
     "tokenId": "123", // Optional
