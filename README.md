@@ -192,60 +192,6 @@ yarn build
 yarn start
 ```
 
-## Usage
-
-The server accepts JSON requests via stdin/stdout. Here's an example:
-
-```bash
-echo '{
-  "tool": "monad-faucet",
-  "parameters": {
-    "walletAddress": "0xYourWalletAddress"
-  }
-}' | node dist/index.js
-```
-
-## Project Structure
-
-```
-monad-mcp-server/
-├── src/
-│   ├── tools/           # Implementations of various tools
-│   ├── utils/           # Utilities and helpers
-│   ├── types/           # TypeScript definitions
-│   └── index.ts         # Entry point
-├── tests/               # Unit and integration tests
-├── .env.example         # Example configuration
-├── package.json         # Dependencies and scripts
-└── tsconfig.json        # TypeScript configuration
-```
-
-## Tool Documentation
-
-See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each tool's usage.
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For questions or issues, please:
-
-- Open an issue on GitHub
-- Join our [Discord](https://discord.gg/monad)
-- Contact us on [Twitter](https://twitter.com/MonadDeFi)
-
 # Prompt Guide - Monad Faucet
 
 ## Input Format
