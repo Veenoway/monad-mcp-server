@@ -133,9 +133,9 @@ To configure the MCP servers, you need to create or modify the following configu
       "command": "node",
       "args": ["/path/to/build/portfolio.js"]
     },
-    "nft-holders": {
+    "nft-top-holders": {
       "command": "node",
-      "args": ["/path/to/build/nft-holders.js"]
+      "args": ["/path/to/build/nft-holder.js"]
     },
     "monad-ai-trader": {
       "command": "node",
