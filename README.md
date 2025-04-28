@@ -1,3 +1,279 @@
+# Monad MCP Server
+
+A MCP (Model Context Protocol) server for interacting with the Monad blockchain, offering a comprehensive suite of DeFi tools and blockchain functionalities.
+
+## Features
+
+- 🚰 Monad Faucet - Get MON tokens for the testnet
+- 📝 Solidity Contract Deployment
+- 🎨 Image Generation & NFT Minting
+- 💱 Token Swap
+- 🤖 Autonomous AI Trading Agent
+- 🔍 Smart Contract Analysis
+- 👥 NFT Holders Analysis
+- 📊 Portfolio Analysis
+- 🏆 Competitive DeFi Challenges
+- 🔒 Staking & Unstaking
+- 💸 Token Transfer
+
+## Prerequisites
+
+- Node.js v18 or higher
+- npm or yarn
+- A private key for Monad testnet
+
+## Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/your-username/monad-mcp-server.git
+cd monad-mcp-server
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Configure environment variables:
+
+```bash
+cp .env.example .env
+# Edit the .env file with your configurations
+```
+
+# Environment Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Network Configuration
+NETWORK_RPC_URL=https://testnet.monad.xyz
+CHAIN_ID=1234
+
+# Wallet Configuration
+PRIVATE_KEY=your_private_key_here
+WALLET_ADDRESS=your_wallet_address_here
+
+# API Keys (if needed)
+INFURA_API_KEY=your_infura_key_here
+ETHERSCAN_API_KEY=your_etherscan_key_here
+
+# MCP Server Configuration
+MCP_SERVER_PORT=3000
+MCP_SERVER_HOST=localhost
+
+# Token Addresses
+MON_TOKEN_ADDRESS=0xYourMonTokenAddress
+TCHOG_TOKEN_ADDRESS=0xYourTchogTokenAddress
+
+# DEX Configuration
+UNISWAP_ROUTER_ADDRESS=0xYourUniswapRouterAddress
+SUSHISWAP_ROUTER_ADDRESS=0xYourSushiswapRouterAddress
+
+# Staking Configuration
+STAKING_CONTRACT_ADDRESS=0xYourStakingContractAddress
+UNSTAKING_COOLDOWN=604800 # 7 days in seconds
+
+# NFT Configuration
+NFT_CONTRACT_ADDRESS=0xYourNftContractAddress
+IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs/
+```
+
+## Important Notes About MCP Servers
+
+1. **Path Configuration Issues**
+
+   - Ensure all paths in `claude_desktop_config.json` are absolute paths
+   - The paths should point to the compiled JavaScript files in the `build` directory
+   - Example: `/Users/your-username/monad-mcp-server/build/tool-name.js`
+
+2. **Common Problems**
+
+   - MCP servers might fail to start if paths contain spaces
+   - Node.js version compatibility issues (use Node.js v18 or higher)
+   - Permission issues with the configuration file
+   - Environment variables not being loaded correctly
+
+3. **Troubleshooting Steps**
+
+   - Verify the paths in `claude_desktop_config.json`
+   - Check file permissions: `chmod 644 claude_desktop_config.json`
+   - Ensure Node.js is in your PATH
+   - Verify all environment variables are set correctly
+   - Check the build directory exists and contains compiled files
+
+4. **Alternative Configuration**
+   If MCP servers are not working properly, you can run the tools directly:
+
+   ```bash
+   # Example for faucet
+   node build/faucet.js '{"parameters":{"walletAddress":"0xYourAddress"}}'
+
+   # Example for staking
+   node build/staking.js '{"parameters":{"privateKey":"0xYourKey","amount":"0.2"}}'
+   ```
+
+5. **Development Mode**
+   For development, you can use:
+
+   ```bash
+   # Start the development server
+   npm run dev
+
+   # Or run tools directly with ts-node
+   ts-node src/tools/faucet.ts '{"parameters":{"walletAddress":"0xYourAddress"}}'
+   ```
+
+# MCP Servers Configuration
+
+To configure the MCP servers, you need to create or modify the following configuration file:
+
+```json
+{
+  "mcpServers": {
+    "generate-image-mint-nft": {
+      "command": "node",
+      "args": ["/path/to/build/generate-image.js"]
+    },
+    "deploy-solidity": {
+      "command": "node",
+      "args": ["/path/to/build/deploy-solidity.js"]
+    },
+    "swap": {
+      "command": "node",
+      "args": ["/path/to/build/swap.js"]
+    },
+    "monad-faucet": {
+      "command": "node",
+      "args": ["/path/to/build/faucet.js"]
+    },
+    "analyse-smart-contract": {
+      "command": "node",
+      "args": ["/path/to/build/analyse-smart-contract.js"]
+    },
+    "user-portfolio": {
+      "command": "node",
+      "args": ["/path/to/build/portfolio.js"]
+    },
+    "nft-holders": {
+      "command": "node",
+      "args": ["/path/to/build/nft-holders.js"]
+    },
+    "monad-ai-trader": {
+      "command": "node",
+      "args": ["/path/to/build/ai-agent.js"]
+    },
+    "defi-challenges": {
+      "command": "node",
+      "args": ["/path/to/build/defi-challenge.js"]
+    },
+    "monad-staking": {
+      "command": "node",
+      "args": ["/path/to/build/staking.js"]
+    },
+    "send-token": {
+      "command": "node",
+      "args": ["/path/to/build/send-token.js"]
+    }
+  }
+}
+```
+
+## Configuration File Location
+
+The configuration file should be placed at the following location:
+
+- macOS : `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows : `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux : `~/.config/Claude/claude_desktop_config.json`
+
+## Important Notes
+
+- Ensure all paths to JavaScript files are correct
+- Each tool must have its own build script
+- Paths can be absolute or relative
+- The `node` command must be accessible in your PATH
+- Scripts must be compiled before use
+
+## Starting the Server
+
+1. Start the server in development mode:
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+2. For production:
+
+```bash
+npm run build
+npm start
+# or
+yarn build
+yarn start
+```
+
+## Usage
+
+The server accepts JSON requests via stdin/stdout. Here's an example:
+
+```bash
+echo '{
+  "tool": "monad-faucet",
+  "parameters": {
+    "walletAddress": "0xYourWalletAddress"
+  }
+}' | node dist/index.js
+```
+
+## Project Structure
+
+```
+monad-mcp-server/
+├── src/
+│   ├── tools/           # Implementations of various tools
+│   ├── utils/           # Utilities and helpers
+│   ├── types/           # TypeScript definitions
+│   └── index.ts         # Entry point
+├── tests/               # Unit and integration tests
+├── .env.example         # Example configuration
+├── package.json         # Dependencies and scripts
+└── tsconfig.json        # TypeScript configuration
+```
+
+## Tool Documentation
+
+See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each tool's usage.
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For questions or issues, please:
+
+- Open an issue on GitHub
+- Join our [Discord](https://discord.gg/monad)
+- Contact us on [Twitter](https://twitter.com/MonadDeFi)
+
 # Prompt Guide - Monad Faucet
 
 ## Input Format
@@ -62,9 +338,8 @@ I need tokens for testing on Monad Testnet. My address: 0x1234567890123456789012
 ```
 Deploy a NFT smart contract
 Smart contract should include:
-WL phase wich last 24 hours and switch to public, 1000 total supply, WL price: 0.3 MON, public price 10 MON.
+WL phase which lasts 24 hours and switches to public, 1000 total supply, WL price: 0.3 MON, public price 10 MON.
 to Monad testnet with my private key: <your_private_key>
-
 ```
 
 ```
@@ -825,3 +1100,302 @@ Suggestions:
 - Transactions include status and gas usage
 - Data is based on on-chain events
 - Balances are verified in real-time
+
+# Prompt Guide - Monad DeFi Challenge
+
+## Overview
+
+The Monad DeFi Challenge is a competitive platform that allows users to participate in various DeFi activities on the Monad testnet, compare their performance with other users, and earn rewards.
+
+## Challenge Types
+
+### 1. Yield Farming
+
+- Focus on maximizing yield through various farming strategies
+- Support for different risk levels (low, medium, high)
+- Automatic portfolio rebalancing available
+
+### 2. Trading
+
+- Competitive trading challenges
+- Support for different trading strategies
+- Performance tracking and leaderboard
+
+### 3. Liquidity Mining
+
+- Provide liquidity to different pools
+- Earn rewards based on performance
+- Risk management tools
+
+### 4. Staking
+
+- Network staking challenges
+- Governance participation
+- Protocol staking options
+
+## Features
+
+### Risk Management
+
+- Three risk levels: Low, Medium, High
+- Automatic risk assessment
+- Portfolio diversification recommendations
+
+### Performance Tracking
+
+- Real-time performance monitoring
+- Historical performance analysis
+- Comparative analytics with other participants
+
+### Rewards System
+
+- Daily, weekly, and monthly challenges
+- Reward pool distribution
+- Entry fee structure based on duration
+
+### Technical Features
+
+- Gas optimization
+- Transaction speed monitoring
+- Smart contract security analysis
+
+## API Integration
+
+### JSON Request Format
+
+```json
+{
+  "tool": "defi-challenges",
+  "parameters": {
+    "privateKey": "0xYourPrivateKey",
+    "challengeType": "yield-farming",
+    "duration": "weekly",
+    "publicUsername": "optional_username",
+    "initialInvestment": "1.0",
+    "riskLevel": "medium",
+    "joinPool": true,
+    "teamName": "optional_team_name",
+    "specificStrategies": ["strategy1", "strategy2"],
+    "autoRebalance": true,
+    "notificationsEnabled": true
+  }
+}
+```
+
+### Response Format
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Challenge details and results"
+    }
+  ],
+  "challengeSummary": {
+    "challengeId": "unique_id",
+    "participant": {
+      "username": "user_name",
+      "wallet": "wallet_address",
+      "team": "team_name"
+    },
+    "challenge": {
+      "type": "challenge_type",
+      "duration": "challenge_duration",
+      "riskLevel": "risk_level",
+      "startedAt": "timestamp",
+      "endsAt": "timestamp",
+      "initialInvestment": "amount",
+      "joinedRewardsPool": true,
+      "entryFee": "fee_amount",
+      "autoRebalancing": true
+    },
+    "strategy": {
+      "selectedStrategies": ["strategy1", "strategy2"],
+      "initialAllocation": [
+        {
+          "asset": "asset_name",
+          "percentage": 50,
+          "amount": "amount"
+        }
+      ],
+      "projectedAPY": "percentage",
+      "projectedROI": "percentage"
+    },
+    "ranking": {
+      "currentParticipants": 100,
+      "yourEstimatedRank": 25,
+      "topPerformers": [
+        {
+          "rank": 1,
+          "username": "top_user",
+          "performance": 15.5,
+          "strategy": "winning_strategy"
+        }
+      ]
+    },
+    "rewards": {
+      "totalPoolSize": "pool_size",
+      "estimatedRewards": "reward_amount",
+      "rewardsBreakdown": [
+        {
+          "position": "1st Place",
+          "amount": "reward_amount",
+          "chance": "percentage"
+        }
+      ]
+    }
+  }
+}
+```
+
+# Prompt Guide - Monad Staking
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "monad-staking",
+  "parameters": {
+    "privateKey": "0xYourPrivateKey",
+    "amount": "0.2"
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+I want to stake 0.2 MON on Monad Testnet with my private key: 0x1234567890123456789012345678901234567890
+```
+
+```
+Stake 0.5 MON on Monad Testnet. My private key: 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "✅ 0.2 MON successfully staked from 0xYourWalletAddress\nTransaction: 0xTransactionHash\nBalance after: 0.2 aprMON"
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Private key must be valid and have sufficient MON balance
+- Amount must be specified in MON (not in wei)
+- Staking converts your MON to aprMON (liquid staking tokens)
+- Conversion rate is currently 1:1 on testnet
+- Staked tokens generate rewards over time
+
+# Prompt Guide - Monad Unstaking
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "monad-unstaking",
+  "parameters": {
+    "privateKey": "0xYourPrivateKey",
+    "amount": "0.2"
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+I want to unstake 0.2 aprMON on Monad Testnet with my private key: 0x1234567890123456789012345678901234567890
+```
+
+```
+Unstake 0.5 aprMON on Monad Testnet. My private key: 0x1234567890123456789012345678901234567890
+```
+
+## Output Format
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "✅ 0.2 aprMON successfully unstaked from 0xYourWalletAddress\nTransaction: 0xTransactionHash\nBalance after: 0.2 MON"
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Private key must be valid and have sufficient aprMON balance
+- Amount must be specified in aprMON (not in wei)
+- Unstaking converts your aprMON to MON
+- Conversion rate is currently 1:1 on testnet
+- There is a 7-day cooldown period before unstaking
+- Accumulated rewards are automatically claimed during unstaking
+
+# Prompt Guide - Token Transfer
+
+## Input Format
+
+### JSON Request
+
+```json
+{
+  "tool": "send-token",
+  "parameters": {
+    "privateKey": "0xYourPrivateKey",
+    "toAddress": "0xRecipientAddress",
+    "amount": "0.2",
+    "tokenAddress": "0xTokenAddress" // Optional, defaults to native MON
+  }
+}
+```
+
+### Natural Prompt Examples
+
+```
+Send 0.2 MON to address 0x1234567890123456789012345678901234567890. My private key: 0xabcdef1234567890
+```
+
+```
+Transfer 0.5 TCHOG tokens to 0x1234567890123456789012345678901234567890. My private key: 0xabcdef1234567890
+```
+
+```
+I want to send 1.0 MON to 0x1234567890123456789012345678901234567890. My private key: 0xabcdef1234567890
+```
+
+## Output Format
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "✅ 0.2 MON successfully sent to 0xRecipientAddress\nTransaction: 0xTransactionHash\nGas used: 21000"
+    }
+  ]
+}
+```
+
+## Important Notes
+
+- Private key must be valid and have sufficient balance
+- Amount must be specified in full units (not in wei)
+- For native MON transfers, tokenAddress can be omitted
+- For ERC20 tokens, tokenAddress must be specified
+- Gas limit is automatically calculated
+- Transaction will fail if recipient address is invalid
+- Supports both native MON and ERC20 token transfers
+- Transaction can be viewed on Monad Explorer

@@ -19,46 +19,40 @@ export const server = new McpServer({
 
 server.tool(
   "defi-challenges",
-  "Participer à des défis DeFi sur Monad et comparer vos performances avec d'autres utilisateurs",
+  "Participate in DeFi challenges on Monad and compare your performance with other users",
   {
-    privateKey: z.string().describe("Clé privée du wallet participant"),
+    privateKey: z.string().describe("Private key of the participating wallet"),
     challengeType: z
       .enum(["yield-farming", "trading", "liquidity-mining", "staking", "all"])
       .default("all")
-      .describe("Type de défi"),
+      .describe("Challenge type"),
     duration: z
       .enum(["daily", "weekly", "monthly"])
       .default("weekly")
-      .describe("Durée du défi"),
+      .describe("Challenge duration"),
     publicUsername: z
       .string()
       .optional()
-      .describe("Nom d'utilisateur public pour le leaderboard"),
-    initialInvestment: z.string().describe("Montant initial pour le défi"),
+      .describe("Public username for the leaderboard"),
+    initialInvestment: z.string().describe("Initial amount for the challenge"),
     riskLevel: z
       .enum(["low", "medium", "high"])
       .default("medium")
-      .describe("Niveau de risque acceptable"),
-    joinPool: z
-      .boolean()
-      .default(false)
-      .describe("Rejoindre le pool de récompenses"),
-    teamName: z
-      .string()
-      .optional()
-      .describe("Nom de l'équipe (pour les défis en équipe)"),
+      .describe("Acceptable risk level"),
+    joinPool: z.boolean().default(false).describe("Join the rewards pool"),
+    teamName: z.string().optional().describe("Team name (for team challenges)"),
     specificStrategies: z
       .array(z.string())
       .optional()
-      .describe("Stratégies DeFi spécifiques à utiliser"),
+      .describe("Specific DeFi strategies to use"),
     autoRebalance: z
       .boolean()
       .default(false)
-      .describe("Rééquilibrer automatiquement le portefeuille"),
+      .describe("Automatically rebalance the portfolio"),
     notificationsEnabled: z
       .boolean()
       .default(true)
-      .describe("Activer les notifications de performance"),
+      .describe("Enable performance notifications"),
   },
   async ({
     privateKey,
@@ -75,89 +69,85 @@ server.tool(
   }) => {
     try {
       console.error(
-        `Initialisation du défi DeFi pour ${
-          publicUsername || "utilisateur anonyme"
-        }`
+        `Initializing DeFi challenge for ${publicUsername || "anonymous user"}`
       );
 
-      // Initialisation et validation des paramètres
+      // Initialize and validate parameters
       if (
         !ethers.isAddress(initialInvestment) &&
         isNaN(Number(initialInvestment))
       ) {
         throw new Error(
-          `Montant invalide pour l'investissement initial: ${initialInvestment}`
+          `Invalid amount for initial investment: ${initialInvestment}`
         );
       }
 
-      // Créer le wallet avec la clé privée
+      // Create wallet with private key
       const wallet = new ethers.Wallet(privateKey, provider);
       const walletAddress = wallet.address;
 
-      console.error(`Adresse du wallet: ${walletAddress}`);
+      console.error(`Wallet address: ${walletAddress}`);
 
-      // Vérifier le solde du wallet
+      // Check wallet balance
       const balance = await provider.getBalance(walletAddress);
       const formattedBalance = ethers.formatEther(balance);
-      console.error(`Balance du wallet: ${formattedBalance} MON`);
+      console.error(`Wallet balance: ${formattedBalance} MON`);
 
-      // Vérifier que le montant initial ne dépasse pas le solde disponible
+      // Verify that initial amount doesn't exceed available balance
       const investmentAmount = ethers.parseEther(initialInvestment);
       if (balance < investmentAmount) {
         throw new Error(
-          `Solde insuffisant. Vous avez ${formattedBalance} MON, mais vous essayez d'investir ${initialInvestment} MON.`
+          `Insufficient balance. You have ${formattedBalance} MON, but you're trying to invest ${initialInvestment} MON.`
         );
       }
 
-      // Simuler l'inscription au défi
+      // Simulate challenge registration
       console.error(
-        `Inscription au défi de type ${challengeType} pour une durée ${duration}`
+        `Registering for ${challengeType} challenge with ${duration} duration`
       );
       const challengeId = `CHALLENGE_${Math.random()
         .toString(36)
         .substring(2, 9)}`;
 
-      // Générer un username aléatoire si non fourni
+      // Generate a random username if not provided
       const effectiveUsername =
         publicUsername ||
         `MonadUser_${Math.random().toString(36).substring(2, 7)}`;
 
-      // Déterminer les stratégies selon le type de défi et le niveau de risque
+      // Determine strategies based on challenge type and risk level
       const strategies = determineStrategies(
         challengeType,
         riskLevel,
         specificStrategies
       );
-      console.error(`Stratégies sélectionnées: ${strategies.join(", ")}`);
+      console.error(`Selected strategies: ${strategies.join(", ")}`);
 
-      // Déterminer le montant des frais d'inscription (le cas échéant)
+      // Determine entry fee (if applicable)
       const entryFee = joinPool
         ? calculateEntryFee(duration, initialInvestment)
         : "0";
 
-      // Simuler la transaction d'inscription
+      // Simulate registration transaction
       let registrationTxHash = "";
       if (joinPool) {
-        console.error(
-          `Simulation du paiement des frais d'inscription: ${entryFee} MON`
-        );
+        console.error(`Simulating rewards pool payment: ${entryFee} MON`);
         registrationTxHash = `0x${Math.random().toString(16).substring(2, 66)}`;
       }
 
-      // Récupérer les données du leaderboard actuel (simulées)
+      // Get current leaderboard data (simulated)
       const leaderboardData = generateSimulatedLeaderboard(
         challengeType,
         duration
       );
 
-      // Calculer les récompenses potentielles
+      // Calculate potential rewards
       const potentialRewards = calculatePotentialRewards(
         joinPool,
         initialInvestment,
         leaderboardData
       );
 
-      // Estimer les performances selon la stratégie et le risque
+      // Estimate performance based on strategy and risk
       const performanceProjection = projectPerformance(
         challengeType,
         riskLevel,
@@ -165,17 +155,17 @@ server.tool(
         strategies
       );
 
-      // Collecter les défis communautaires actifs
+      // Get active community challenges
       const activeChallenges = getActiveChallenges(duration);
 
-      // Calculer le classement estimé
+      // Calculate estimated ranking
       const estimatedRanking = estimateRanking(
         initialInvestment,
         riskLevel,
         leaderboardData
       );
 
-      // Simuler l'allocation initiale des actifs selon la stratégie
+      // Simulate initial asset allocation based on strategy
       const initialAllocation = allocateAssets(
         challengeType,
         riskLevel,
@@ -183,26 +173,26 @@ server.tool(
         strategies
       );
 
-      // Générer un mockup visuel du leaderboard (description textuelle)
+      // Generate a mockup visualization of the leaderboard (textual description)
       const leaderboardVisualization = visualizeLeaderboard(
         leaderboardData,
         effectiveUsername,
         estimatedRanking
       );
 
-      // Simuler un historique des performances et créer une projection
+      // Simulate performance history and create a projection
       const performanceHistory = generatePerformanceHistory(duration);
 
-      // Créer un tableau des meilleures opportunités DeFi sur Monad
+      // Create a table of the best DeFi opportunities on Monad
       const defiOpportunities = identifyDefiOpportunities(
         challengeType,
         riskLevel
       );
 
-      // Calculer les avantages de Monad vs autres chaînes pour les stratégies sélectionnées
+      // Calculate Monad vs other chains advantages for selected strategies
       const chainComparison = compareWithOtherChains(challengeType, strategies);
 
-      // Préparer le récapitulatif du challenge
+      // Prepare challenge summary
       const challengeSummary = {
         challengeId,
         participant: {
@@ -252,7 +242,7 @@ server.tool(
         chainComparison,
       };
 
-      // Formatage du résultat pour l'affichage
+      // Format result for display
       const formattedOutput = formatChallengeOutput(
         challengeSummary,
         leaderboardVisualization
@@ -268,14 +258,12 @@ server.tool(
         challengeSummary,
       };
     } catch (error) {
-      console.error("Erreur lors de l'inscription au défi DeFi:", error);
+      console.error("Error:", error);
       return {
         content: [
           {
             type: "text",
-            text: `Échec de l'inscription au défi DeFi: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
+            text: `❌ Error during challenge initialization: ${error}`,
           },
         ],
       };
@@ -287,14 +275,14 @@ async function main() {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Serveur MCP Monad testnet lancé sur stdio");
+    console.error("MCP DeFi challenges server started on stdio");
   } catch (error) {
-    console.error("Erreur d'initialisation du serveur:", error);
+    console.error("Server initialization error:", error);
   }
 }
 
 main().catch((error) => {
-  console.error("Erreur fatale dans main():", error);
+  console.error("Fatal error in main():", error);
   process.exit(1);
 });
 
@@ -307,7 +295,7 @@ type ChallengeType =
 type RiskLevel = "low" | "medium" | "high";
 type Duration = "daily" | "weekly" | "monthly";
 
-// Interface pour les objets de comparaison
+// Interface for comparison objects
 interface GasComparison {
   chain: string;
   avgGasFee: string;
@@ -329,14 +317,14 @@ interface YieldComparison {
   monad: string;
 }
 
-// Interface pour l'allocation d'actifs
+// Interface for asset allocation
 interface AssetAllocation {
   asset: string;
   percentage: number;
   amount: string;
 }
 
-// Interface pour les participants au leaderboard
+// Interface for leaderboard participants
 interface Performer {
   rank: number;
   username: string;
@@ -346,14 +334,14 @@ interface Performer {
   rewardShare: number;
 }
 
-// Interface pour les récompenses
+// Interface for rewards
 interface Reward {
   position: string;
   amount: string;
   chance: string;
 }
 
-// Interface pour les opportunités DeFi
+// Interface for DeFi opportunities
 interface DefiOpportunity {
   name: string;
   apy: string;
@@ -362,7 +350,7 @@ interface DefiOpportunity {
   type: string;
 }
 
-// Interfaces pour l'objet ChallengeSummary
+// Interfaces for ChallengeSummary
 interface ChallengeSummary {
   challengeId?: string;
   participant: {
@@ -419,12 +407,12 @@ function determineStrategies(
   riskLevel: RiskLevel,
   specificStrategies?: string[]
 ): string[] {
-  // Si des stratégies spécifiques sont fournies, les utiliser
+  // If specific strategies are provided, use them
   if (specificStrategies && specificStrategies.length > 0) {
     return specificStrategies;
   }
 
-  // Sinon, déterminer les stratégies en fonction du type de défi et du niveau de risque
+  // Otherwise, determine strategies based on challenge type and risk level
   const strategies = [];
 
   switch (challengeType) {
@@ -493,7 +481,7 @@ function calculateEntryFee(
   }[duration];
 
   const amount = parseFloat(initialInvestment.toString());
-  const percentage = basePercentage - (amount > 10 ? 0.5 : 0); // Réduction pour les grands investissements
+  const percentage = basePercentage - (amount > 10 ? 0.5 : 0); // Reduction for large investments
 
   return Math.max(0.1, amount * (percentage / 100));
 }
@@ -526,22 +514,22 @@ function generateSimulatedLeaderboard(
       performance: parseFloat(performance.toFixed(2)),
       initialInvestment: (1 + Math.random() * 9).toFixed(2), // 1-10 MON
       strategy: randomElement(getStrategiesForType(challengeType)),
-      rewardShare: 0, // Sera calculé plus tard
+      rewardShare: 0, // Will be calculated later
     });
   }
 
-  // Trier par performance
+  // Sort by performance
   leaderboard.sort((a, b) => b.performance - a.performance);
 
-  // Mettre à jour les rangs
+  // Update ranks
   leaderboard.forEach((participant, index) => {
     participant.rank = index + 1;
 
-    // Calculer la part des récompenses pour les top participants
+    // Calculate reward share for top participants
     if (index < 3) {
       participant.rewardShare = [50, 30, 15][index]; // Top 3: 50%, 30%, 15%
     } else if (index < 10) {
-      participant.rewardShare = 5 / 7; // Les 7 suivants se partagent 5%
+      participant.rewardShare = 5 / 7; // Next 7 share 5%
     } else {
       participant.rewardShare = 0;
     }
@@ -551,7 +539,7 @@ function generateSimulatedLeaderboard(
 }
 
 function getStrategiesForType(challengeType: ChallengeType): string[] {
-  // Retourner des stratégies possibles pour chaque type de défi
+  // Return possible strategies for each type of challenge
   switch (challengeType) {
     case "yield-farming":
       return [
@@ -610,7 +598,7 @@ function calculatePotentialRewards(
     rewardShare: number;
   }>
 ) {
-  // Calculer les récompenses potentielles en fonction du classement et de la participation
+  // Calculate potential rewards based on ranking and participation
   if (!joinPool) {
     return {
       estimatedRewards: "0",
@@ -624,10 +612,10 @@ function calculatePotentialRewards(
     };
   }
 
-  // Estimer la taille du pool de récompenses
+  // Estimate rewards pool size
   const poolSize = calculateTotalPoolSize(leaderboard, true, 0);
 
-  // Calculer les récompenses potentielles pour différentes positions
+  // Calculate potential rewards for different positions
   const breakdown = [
     {
       position: "1st Place",
@@ -652,7 +640,7 @@ function calculatePotentialRewards(
     { position: "Below Top 10", amount: "0", chance: "40%" },
   ];
 
-  // Calculer les récompenses attendues (somme pondérée par probabilité)
+  // Calculate expected rewards (weighted by probability)
   const expectedReward =
     parseFloat(breakdown[0].amount) * 0.05 +
     parseFloat(breakdown[1].amount) * 0.1 +
@@ -685,7 +673,7 @@ function projectPerformance(
     liquidityRisk: string;
   };
 } {
-  // Simuler les projections de performance en fonction des paramètres
+  // Simulate performance projections based on parameters
   const baseAPY = {
     "yield-farming": { low: 5, medium: 15, high: 40 },
     trading: { low: 10, medium: 25, high: 60 },
@@ -694,10 +682,10 @@ function projectPerformance(
     all: { low: 6, medium: 18, high: 45 },
   }[challengeType][riskLevel];
 
-  // Ajouter une variation aléatoire
+  // Add random variation
   const apy = baseAPY + (Math.random() * baseAPY * 0.4 - baseAPY * 0.2);
 
-  // Calculer le ROI selon la durée
+  // Calculate ROI based on duration
   const durationInDays = {
     daily: 1,
     weekly: 7,
@@ -707,16 +695,16 @@ function projectPerformance(
   const dailyROI = apy / 365;
   const expectedROI = dailyROI * durationInDays;
 
-  // Simuler d'autres métriques basées sur le niveau de risque
+  // Simulate other metrics based on risk level
   const volatilityRatings = {
-    low: "Faible",
-    medium: "Modérée",
-    high: "Élevée",
+    low: "Low",
+    medium: "Moderate",
+    high: "High",
   };
 
   const volatility = volatilityRatings[riskLevel];
 
-  // Ces valeurs seraient calculées dans un système réel
+  // These values would be calculated in a real system
   return {
     apy,
     expectedROI,
@@ -738,9 +726,9 @@ function projectPerformance(
 
 function getRiskRating(riskLevel: RiskLevel): string {
   return {
-    low: "Faible (3/10)",
-    medium: "Modérée (6/10)",
-    high: "Élevée (8/10)",
+    low: "Low (3/10)",
+    medium: "Moderate (6/10)",
+    high: "High (8/10)",
   }[riskLevel];
 }
 
@@ -750,15 +738,15 @@ function getImpermanentLossRisk(
 ): string {
   if (challengeType === "liquidity-mining") {
     return {
-      low: "Faible (2/10)",
-      medium: "Modéré (5/10)",
-      high: "Élevé (8/10)",
+      low: "Low (2/10)",
+      medium: "Moderate (5/10)",
+      high: "High (8/10)",
     }[riskLevel];
   } else if (challengeType === "yield-farming") {
     return {
-      low: "Très faible (1/10)",
-      medium: "Faible (3/10)",
-      high: "Modéré (6/10)",
+      low: "Very Low (1/10)",
+      medium: "Low (3/10)",
+      high: "Moderate (6/10)",
     }[riskLevel];
   } else {
     return "Minimal (0/10)";
@@ -771,53 +759,53 @@ function getSmartContractRisk(strategies: string[]): string {
       (s: string) => s.includes("New") || s.includes("High-Yield")
     )
   ) {
-    return "Élevé (7/10)";
+    return "High (7/10)";
   } else if (
     strategies.some(
       (s: string) => s.includes("Protocol") || s.includes("Incentivized")
     )
   ) {
-    return "Modéré (5/10)";
+    return "Moderate (5/10)";
   } else {
-    return "Faible (3/10)";
+    return "Low (3/10)";
   }
 }
 
 function getLiquidityRisk(challengeType: ChallengeType): string {
   switch (challengeType) {
     case "trading":
-      return "Modéré (5/10)";
+      return "Moderate (5/10)";
     case "liquidity-mining":
-      return "Élevé (7/10)";
+      return "High (7/10)";
     case "yield-farming":
-      return "Modéré (4/10)";
+      return "Moderate (4/10)";
     case "staking":
-      return "Faible (2/10)";
+      return "Low (2/10)";
     default:
-      return "Modéré (5/10)";
+      return "Moderate (5/10)";
   }
 }
 
 function getActiveChallenges(duration: Duration) {
-  // Simuler les défis communautaires actifs
+  // Simulate active community challenges
   const baseChallenges = [
     {
       name: "Yield Master Challenge",
-      description: "Obtenez le plus haut rendement en farming",
+      description: "Get the highest yield in farming",
       participants: 120,
       prize: "500 MON",
       endTime: addDays(new Date(), 7),
     },
     {
       name: "Diamond Hands",
-      description: "Ne vendez aucun actif pendant la durée du défi",
+      description: "Do not sell any assets during the challenge duration",
       participants: 85,
       prize: "300 MON",
       endTime: addDays(new Date(), 14),
     },
     {
       name: "DeFi Explorer",
-      description: "Utilisez au moins 5 protocoles DeFi différents",
+      description: "Use at least 5 different DeFi protocols",
       participants: 65,
       prize: "250 MON",
       endTime: addDays(new Date(), 10),
@@ -846,20 +834,20 @@ function estimateRanking(
   riskLevel: RiskLevel,
   leaderboard: Performer[]
 ) {
-  // Estimer le classement basé sur l'investissement initial et le niveau de risque
+  // Estimate ranking based on initial investment and risk level
   const amount = parseFloat(initialInvestment.toString());
 
-  // Facteurs qui influencent le classement
+  // Factors affecting ranking
   const riskFactor = { low: 0.7, medium: 1.0, high: 1.3 }[riskLevel];
-  const investmentFactor = Math.min(1.5, Math.max(0.8, amount / 5)); // 5 MON comme référence
+  const investmentFactor = Math.min(1.5, Math.max(0.8, amount / 5)); // 5 MON as reference
 
-  // Combinaison des facteurs pour estimer le percentile
+  // Combine factors to estimate percentile
   const percentile = Math.min(
     0.95,
     Math.max(0.05, riskFactor * investmentFactor * Math.random())
   );
 
-  // Convertir le percentile en rang
+  // Convert percentile to ranking
   const estimatedRank = Math.max(
     1,
     Math.floor((1 - percentile) * leaderboard.length) + 1
@@ -874,7 +862,7 @@ function allocateAssets(
   investmentAmount: bigint,
   strategies: string[]
 ) {
-  // Simuler l'allocation initiale des actifs
+  // Simulate initial asset allocation
   const allocation = [];
 
   switch (challengeType) {
@@ -1030,7 +1018,7 @@ function allocateAssets(
       }
       break;
 
-    // Autres cas similaires...
+    // Similar cases...
     default:
       allocation.push(
         {
@@ -1065,7 +1053,7 @@ function visualizeLeaderboard(
   username: string,
   estimatedRank: number
 ) {
-  // Créer une visualisation textuelle du leaderboard
+  // Create textual visualization of the leaderboard
   let visualization = ``;
 
   visualization += `🏆 LEADERBOARD (${leaderboard.length} Participants) 🏆\n\n`;
@@ -1073,7 +1061,7 @@ function visualizeLeaderboard(
   visualization += `│ RANK  │ USERNAME            │ PERFORMANCE │   STRATEGY   │\n`;
   visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
 
-  // Afficher les 5 premiers
+  // Display top 5
   for (let i = 0; i < Math.min(5, leaderboard.length); i++) {
     const entry = leaderboard[i];
     visualization += `│ ${entry.rank
@@ -1085,13 +1073,13 @@ function visualizeLeaderboard(
     } │ ${entry.strategy.substring(0, 12).padEnd(12)} │\n`;
   }
 
-  // Ajouter des lignes de séparation si nécessaire
+  // Add separator lines if necessary
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│       │         ...         │            │              │\n`;
   }
 
-  // Ajouter l'utilisateur actuel si son rang est estimé entre 6 et length-5
+  // Add current user if their rank is estimated between 6 and length-5
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│ ${estimatedRank
@@ -1101,13 +1089,13 @@ function visualizeLeaderboard(
     )} │ ${"Your Strategy".padEnd(12)} │\n`;
   }
 
-  // Ajouter des lignes de séparation si nécessaire
+  // Add separator lines if necessary
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│       │         ...         │            │              │\n`;
   }
 
-  // Afficher les 5 derniers si le leaderboard est assez grand
+  // Display last 5 if leaderboard is large enough
   if (leaderboard.length > 10) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
 
@@ -1133,26 +1121,26 @@ function visualizeLeaderboard(
 }
 
 function generatePerformanceHistory(duration: Duration) {
-  // Générer un historique de performances fictif
+  // Generate a fictional performance history
   const durationDays = { daily: 1, weekly: 7, monthly: 30 }[duration];
   const history = [];
 
-  // Générer plus de points pour des durées plus longues
+  // Generate more points for longer durations
   const pointCount = durationDays === 1 ? 24 : durationDays;
   let cumulativePerformance = 0;
 
   for (let i = 0; i < pointCount; i++) {
-    // Calculer le timestamp
+    // Calculate timestamp
     const timestamp = new Date();
     if (durationDays === 1) {
-      // Historique horaire pour la journée
+      // Hourly history for the day
       timestamp.setHours(timestamp.getHours() - (pointCount - i));
     } else {
-      // Historique journalier pour semaine/mois
+      // Daily history for week/month
       timestamp.setDate(timestamp.getDate() - (pointCount - i));
     }
 
-    // Simuler un changement de performance avec un peu de volatilité
+    // Simulate performance change with some volatility
     const change = (Math.random() * 3 - 1) * (durationDays === 1 ? 0.2 : 0.8);
     cumulativePerformance += change;
 
@@ -1170,10 +1158,10 @@ function identifyDefiOpportunities(
   challengeType: ChallengeType,
   riskLevel: RiskLevel
 ) {
-  // Identifier les meilleures opportunités DeFi sur Monad testnet
+  // Identify the best DeFi opportunities on Monad testnet
   const opportunities = [];
 
-  // Opportunités de base selon le type de défi
+  // Base opportunities based on challenge type
   switch (challengeType) {
     case "yield-farming":
       opportunities.push(
@@ -1305,11 +1293,11 @@ function identifyDefiOpportunities(
       );
   }
 
-  // Filtrer selon le niveau de risque
+  // Filter based on risk level
   const riskToLevel = { low: 1, medium: 2, high: 3 };
   const riskLevel_num = riskToLevel[riskLevel];
 
-  // Ajouter quelques opportunités supplémentaires basées sur le niveau de risque
+  // Add some additional opportunities based on risk level
   if (riskLevel_num >= 2) {
     opportunities.push(
       {
@@ -1355,7 +1343,7 @@ function compareWithOtherChains(
   challengeType: ChallengeType,
   strategies: string[]
 ) {
-  // Comparer les avantages de Monad par rapport à d'autres chaînes populaires
+  // Compare Monad advantages against popular other chains
   return {
     gasComparison: [
       { chain: "Ethereum", avgGasFee: "$15-30", monadSavings: "99%" },
@@ -1406,11 +1394,11 @@ function compareWithOtherChains(
       },
     ],
     advantages: [
-      "Vitesse de transaction 10-100x plus rapide que les autres chaînes",
-      "Frais de transaction jusqu'à 99% moins chers qu'Ethereum",
-      "Rendements DeFi plus élevés grâce à des incitations protocole",
-      "Meilleures conditions de liquidité dans les pools principaux",
-      "Expérience utilisateur plus fluide grâce à la finalité quasi-instantanée",
+      "Transaction speed 10-100x faster than other chains",
+      "Transaction fees up to 99% cheaper than Ethereum",
+      "Higher DeFi yields thanks to protocol incentives",
+      "Better liquidity conditions in main pools",
+      "Faster user experience thanks to quasi-instant finality",
     ],
   };
 }
@@ -1450,16 +1438,16 @@ function formatChallengeOutput(
   challengeSummary: ChallengeSummary,
   leaderboardVisualization: string
 ) {
-  // Formater les résultats du défi pour affichage
+  // Format challenge results for display
   let output = `# 🏆 Monad DeFi Challenge - ${challengeSummary.challenge.type.toUpperCase()} 🏆\n\n`;
 
-  // Informations sur le participant
+  // Participant information
   output += `## 👤 Participant\n\n`;
   output += `- **Username**: ${challengeSummary.participant.username}\n`;
   output += `- **Wallet**: ${challengeSummary.participant.wallet}\n`;
   output += `- **Team**: ${challengeSummary.participant.team}\n\n`;
 
-  // Détails du défi
+  // Challenge details
   output += `## 🎯 Challenge Details\n\n`;
   output += `- **Type**: ${challengeSummary.challenge.type}\n`;
   output += `- **Duration**: ${challengeSummary.challenge.duration}\n`;
@@ -1481,7 +1469,7 @@ function formatChallengeOutput(
     challengeSummary.challenge.autoRebalancing ? "Enabled" : "Disabled"
   }\n\n`;
 
-  // Stratégie
+  // Strategy
   output += `## 📊 Strategy\n\n`;
   output += `- **Selected Strategies**: ${challengeSummary.strategy.selectedStrategies.join(
     ", "
@@ -1489,7 +1477,7 @@ function formatChallengeOutput(
   output += `- **Projected APY**: ${challengeSummary.strategy.projectedAPY}\n`;
   output += `- **Projected ROI**: ${challengeSummary.strategy.projectedROI}\n\n`;
 
-  // Allocation initiale
+  // Initial allocation
   output += `### Initial Allocation\n\n`;
   output += `| Asset | Percentage | Amount |\n`;
   output += `|-------|------------|--------|\n`;
@@ -1581,25 +1569,25 @@ function formatChallengeOutput(
   return output;
 }
 
-// Fonction utilitaire pour générer un graphique ASCII de performance
+// Utility function to generate a performance ASCII graph
 function generatePerformanceASCIIGraph(
   performanceData: Array<{ timestamp: string; value: number }>
 ) {
   const height = 10;
   const width = 50;
 
-  // Extraire les valeurs
+  // Extract values
   const values = performanceData.map((p) => p.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min;
 
-  // Initialiser le graphique avec des espaces
+  // Initialize graph with spaces
   const graph = Array(height)
     .fill(null)
     .map(() => Array(width).fill(" "));
 
-  // Remplir le graphique avec les données de performance
+  // Fill graph with performance data
   performanceData.forEach((point, i) => {
     const x = Math.floor((i / performanceData.length) * width);
     const normalizedValue = (point.value - min) / range;
@@ -1610,7 +1598,7 @@ function generatePerformanceASCIIGraph(
     }
   });
 
-  // Ajouter une ligne de base à 100% (valeur initiale)
+  // Add baseline at 100% (initial value)
   const baselineY =
     height - 1 - Math.floor(((100 - min) / range) * (height - 1));
   if (baselineY >= 0 && baselineY < height) {
@@ -1621,10 +1609,10 @@ function generatePerformanceASCIIGraph(
     }
   }
 
-  // Convertir en chaîne de caractères
+  // Convert to string
   const graphStr = graph.map((row) => row.join("")).join("\n");
 
-  // Ajouter les étiquettes
+  // Add labels
   const result = `${max.toFixed(1)}% ┌${"─".repeat(
     width
   )}┐\n${graphStr}\n${min.toFixed(1)}% └${"─".repeat(width)}┘`;

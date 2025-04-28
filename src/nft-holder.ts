@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 import { z } from "zod";
 import { ERC1155_ABI, ERC721_ABI } from "./shared/constants.js";
 
-console.error("Démarrage du serveur MCP...");
+console.error("Starting MCP server...");
 
 export const provider = new ethers.JsonRpcProvider(
   "https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6",
@@ -22,41 +22,38 @@ export const server = new McpServer({
 
 server.tool(
   "nft-holders",
-  "Récupérer la liste des détenteurs d'un NFT spécifique sur Monad Testnet",
+  "Get the list of holders for a specific NFT on Monad Testnet",
   {
-    contractAddress: z.string().describe("Adresse du contrat NFT"),
-    tokenId: z
-      .string()
-      .optional()
-      .describe("ID du token spécifique (optionnel)"),
+    contractAddress: z.string().describe("NFT contract address"),
+    tokenId: z.string().optional().describe("Specific token ID (optional)"),
     standard: z
       .enum(["ERC721", "ERC1155"])
       .default("ERC721")
-      .describe("Standard du NFT (ERC721 ou ERC1155)"),
+      .describe("NFT standard (ERC721 or ERC1155)"),
     limit: z
       .number()
       .optional()
       .default(100)
-      .describe("Nombre maximum de détenteurs à récupérer"),
+      .describe("Maximum number of holders to retrieve"),
   },
   async ({ contractAddress, tokenId, standard, limit }) => {
     try {
-      // Vérifier que l'adresse du contrat est valide
+      // Check if contract address is valid
       if (!ethers.isAddress(contractAddress)) {
-        throw new Error(`Adresse de contrat invalide: ${contractAddress}`);
+        throw new Error(`Invalid contract address: ${contractAddress}`);
       }
 
       console.error(
-        `Récupération des détenteurs pour le NFT à l'adresse: ${contractAddress}`
+        `Retrieving holders for NFT at address: ${contractAddress}`
       );
 
-      // Sélectionner l'ABI en fonction du standard
+      // Select ABI based on standard
       const abi = standard === "ERC721" ? ERC721_ABI : ERC1155_ABI;
 
-      // Créer une instance du contrat
+      // Create contract instance
       const contract = new ethers.Contract(contractAddress, abi, provider);
 
-      // Informations sur la collection
+      // Collection information
       let name = "NFT Collection";
       let symbol = "NFT";
 
@@ -66,25 +63,25 @@ server.tool(
           symbol = await contract.symbol();
         }
       } catch (error) {
-        console.error("Impossible de récupérer le nom ou le symbole:", error);
+        console.error("Unable to retrieve name or symbol:", error);
       }
 
-      // Détenteurs des NFTs
+      // NFT holders
       const holders = new Map<string, number[]>();
 
       if (standard === "ERC721") {
-        // Pour les NFTs ERC721
+        // For ERC721 NFTs
         try {
-          // Si un tokenId spécifique est fourni
+          // If a specific tokenId is provided
           if (tokenId) {
-            // Récupérer le propriétaire de ce tokenId spécifique
+            // Get owner of this specific tokenId
             const owner = await contract.ownerOf(tokenId);
             if (owner) {
               holders.set(owner, [parseInt(tokenId)]);
             }
           } else {
-            // Récupérer tous les tokens (limité par 'limit')
-            // Vérifier si le contrat implémente totalSupply et tokenByIndex (énumérable)
+            // Get all tokens (limited by 'limit')
+            // Check if contract implements totalSupply and tokenByIndex (enumerable)
             let isEnumerable = false;
             let totalSupply = BigInt(0);
 
@@ -93,12 +90,12 @@ server.tool(
               isEnumerable = true;
             } catch (error) {
               console.error(
-                "Le contrat n'implémente pas totalSupply/tokenByIndex, utilisation de la méthode d'événements"
+                "Contract does not implement totalSupply/tokenByIndex, using event method"
               );
             }
 
             if (isEnumerable) {
-              // Si le contrat est énumérable, utiliser totalSupply et tokenByIndex
+              // If contract is enumerable, use totalSupply and tokenByIndex
               const maxTokens = Math.min(Number(totalSupply), limit);
 
               for (let i = 0; i < maxTokens; i++) {
@@ -112,15 +109,12 @@ server.tool(
                     holders.set(owner, [Number(tokenId)]);
                   }
                 } catch (error) {
-                  console.error(
-                    `Erreur lors de la récupération du token ${i}:`,
-                    error
-                  );
+                  console.error(`Error retrieving token ${i}:`, error);
                 }
               }
             } else {
-              // Si le contrat n'est pas énumérable, chercher les événements Transfer
-              // Définir manuellement le filtrage pour les événements Transfer
+              // If contract is not enumerable, look for Transfer events
+              // Manually define filtering for Transfer events
               const transferEventSignature = ethers.id(
                 "Transfer(address,address,uint256)"
               );
@@ -131,11 +125,11 @@ server.tool(
                 topics: [transferEventSignature],
               });
 
-              // Analyser les événements pour trouver les transferts les plus récents
+              // Analyze events to find most recent transfers
               const processedTokens = new Set<string>();
               let tokenCount = 0;
 
-              // Parcourir les événements en ordre inverse (des plus récents aux plus anciens)
+              // Go through events in reverse order (most recent to oldest)
               for (
                 let i = transferEvents.length - 1;
                 i >= 0 && tokenCount < limit;
@@ -143,7 +137,7 @@ server.tool(
               ) {
                 const event = transferEvents[i];
 
-                // Décoder l'événement
+                // Decode event
                 const decodedEvent = contract.interface.parseLog({
                   topics: event.topics as string[],
                   data: event.data,
@@ -167,7 +161,7 @@ server.tool(
                       tokenCount++;
                     } catch (error) {
                       console.error(
-                        `Erreur lors de la récupération du propriétaire pour le token ${tokenIdFromEvent}:`,
+                        `Error retrieving owner for token ${tokenIdFromEvent}:`,
                         error
                       );
                     }
@@ -177,27 +171,24 @@ server.tool(
             }
           }
         } catch (error) {
-          console.error(
-            "Erreur lors de la récupération des détenteurs ERC721:",
-            error
-          );
+          console.error("Error retrieving ERC721 holders:", error);
         }
       } else if (standard === "ERC1155") {
-        // Pour les NFTs ERC1155
-        // Cette implémentation est simplifiée car ERC1155 ne définit pas de méthode standard pour lister tous les tokens
+        // For ERC1155 NFTs
+        // This implementation is simplified as ERC1155 does not define a standard method to list all tokens
 
         if (!tokenId) {
           return {
             content: [
               {
                 type: "text",
-                text: "Pour les NFTs ERC1155, vous devez spécifier un tokenId spécifique.",
+                text: "For ERC1155 NFTs, you must specify a specific tokenId.",
               },
             ],
           };
         }
 
-        // Pour ERC1155, nous avons besoin de rechercher dans les événements TransferSingle et TransferBatch
+        // For ERC1155, we need to search in TransferSingle and TransferBatch events
         const transferSingleSignature = ethers.id(
           "TransferSingle(address,address,address,uint256,uint256)"
         );
@@ -207,7 +198,7 @@ server.tool(
 
         const tokenIdValue = BigInt(tokenId);
 
-        // Récupérer les événements TransferSingle
+        // Get TransferSingle events
         const transferSingleEvents = await provider.getLogs({
           fromBlock: 0,
           toBlock: "latest",
@@ -215,7 +206,7 @@ server.tool(
           topics: [transferSingleSignature],
         });
 
-        // Récupérer les événements TransferBatch
+        // Get TransferBatch events
         const transferBatchEvents = await provider.getLogs({
           fromBlock: 0,
           toBlock: "latest",
@@ -223,7 +214,7 @@ server.tool(
           topics: [transferBatchSignature],
         });
 
-        // Traiter les événements TransferSingle
+        // Process TransferSingle events
         for (const event of transferSingleEvents) {
           const decodedEvent = contract.interface.parseLog({
             topics: event.topics as string[],
@@ -236,7 +227,7 @@ server.tool(
             const value = decodedEvent.args[4];
 
             if (eventTokenId.toString() === tokenId && value > 0) {
-              // Vérifier si l'adresse possède encore ce token
+              // Check if address still owns this token
               try {
                 const balance = await contract.balanceOf(to, tokenIdValue);
 
@@ -250,16 +241,13 @@ server.tool(
                   }
                 }
               } catch (error) {
-                console.error(
-                  `Erreur lors de la vérification du solde pour ${to}:`,
-                  error
-                );
+                console.error(`Error checking balance for ${to}:`, error);
               }
             }
           }
         }
 
-        // Traiter les événements TransferBatch
+        // Process TransferBatch events
         for (const event of transferBatchEvents) {
           const decodedEvent = contract.interface.parseLog({
             topics: event.topics as string[],
@@ -273,7 +261,7 @@ server.tool(
 
             for (let i = 0; i < ids.length; i++) {
               if (ids[i].toString() === tokenId && values[i] > 0) {
-                // Vérifier si l'adresse possède encore ce token
+                // Check if address still owns this token
                 try {
                   const balance = await contract.balanceOf(to, tokenIdValue);
 
@@ -287,10 +275,7 @@ server.tool(
                     }
                   }
                 } catch (error) {
-                  console.error(
-                    `Erreur lors de la vérification du solde pour ${to}:`,
-                    error
-                  );
+                  console.error(`Error checking balance for ${to}:`, error);
                 }
               }
             }
@@ -298,7 +283,7 @@ server.tool(
         }
       }
 
-      // Convertir la Map en tableau pour la réponse
+      // Convert Map to array for response
       const holdersArray = Array.from(holders.entries()).map(
         ([address, tokens]) => ({
           address,
@@ -307,13 +292,13 @@ server.tool(
         })
       );
 
-      // Trier par nombre de tokens (décroissant)
+      // Sort by number of tokens (descending)
       holdersArray.sort((a, b) => b.tokenCount - a.tokenCount);
 
-      // Limiter le nombre de détenteurs retournés
+      // Limit number of holders returned
       const limitedHolders = holdersArray.slice(0, limit);
 
-      // Préparer le texte récapitulatif pour l'affichage
+      // Prepare summary text for display
       const holderSummary = limitedHolders
         .map(
           (holder, index) =>
@@ -327,10 +312,10 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `Détenteurs de NFT pour ${name} (${symbol}) à l'adresse ${contractAddress}:\n\n${
+            text: `NFT holders for ${name} (${symbol}) at address ${contractAddress}:\n\n${
               limitedHolders.length > 0
                 ? holderSummary
-                : "Aucun détenteur trouvé pour cette collection ou ce token."
+                : "No holders found for this collection or token."
             }`,
           },
         ],
@@ -343,18 +328,15 @@ server.tool(
         holders: limitedHolders,
       };
     } catch (error) {
-      console.error(
-        `Erreur lors de la récupération des détenteurs de NFT:`,
-        error
-      );
+      console.error(`Error retrieving NFT holders:`, error);
 
       return {
         content: [
           {
             type: "text",
-            text: `Erreur lors de la récupération des détenteurs de NFT: ${
+            text: `Error retrieving NFT holders: ${
               error instanceof Error ? error.message : String(error)
-            }\n\nVérifiez que l'adresse du contrat est correcte et qu'il s'agit bien d'un contrat NFT (${standard}).`,
+            }\n\nPlease verify that the contract address is correct and that it is an NFT contract (${standard}).`,
           },
         ],
       };
@@ -366,13 +348,13 @@ async function main() {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Serveur MCP Monad testnet lancé sur stdio");
+    console.error("MCP Monad testnet server started on stdio");
   } catch (error) {
-    console.error("Erreur d'initialisation du serveur:", error);
+    console.error("Server initialization error:", error);
   }
 }
 
 main().catch((error) => {
-  console.error("Erreur fatale dans main():", error);
+  console.error("Fatal error in main():", error);
   process.exit(1);
 });

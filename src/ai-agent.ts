@@ -23,14 +23,14 @@ async function performInitialTrade(
   initialInvestment: number
 ) {
   try {
-    console.error("Exécution d'un achat initial de TCHOG...");
+    console.error("Executing initial TCHOG purchase...");
 
-    // Adresses des contrats
+    // Contract addresses
     const WMON_ADDRESS = "0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701";
     const TCHOG_ADDRESS = "0xCaF9244A9D4A79c3229cb354a1919961fa0122B4";
     const DEX_ROUTER_ADDRESS = "0xfb8e1c3b833f9e67a71c859a132cf783b645e436";
 
-    // Instancier les contrats
+    // Instantiate contracts
     const wmonContract = new ethers.Contract(WMON_ADDRESS, ERC20_ABI, wallet);
     const routerContract = new ethers.Contract(
       DEX_ROUTER_ADDRESS,
@@ -38,27 +38,25 @@ async function performInitialTrade(
       wallet
     );
 
-    // Montant à échanger (50% de l'investissement initial)
+    // Amount to swap (50% of initial investment)
     const amountToSwap = initialInvestment * 0.5;
     const amountInWei = ethers.parseEther(amountToSwap.toString());
 
-    // Approuver le router pour dépenser les WMON
-    console.error(
-      `Approbation du router pour dépenser ${amountToSwap} WMON...`
-    );
+    // Approve router to spend WMON
+    console.error(`Approving router to spend ${amountToSwap} WMON...`);
     const approvalTx = await wmonContract.approve(
       DEX_ROUTER_ADDRESS,
       amountInWei
     );
     await approvalTx.wait();
 
-    // Calculer le montant minimum à recevoir (avec 1% de slippage)
-    const amountOutMin = 0; // Pour la démonstration, acceptons n'importe quel montant
+    // Calculate minimum amount to receive (with 1% slippage)
+    const amountOutMin = 0; // For demonstration, accept any amount
 
-    // Construire le chemin de swap
+    // Build swap path
     const path = [WMON_ADDRESS, TCHOG_ADDRESS];
 
-    // Effectuer le swap
+    // Execute swap
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
     const swapTx = await routerContract.swapExactTokensForTokens(
       amountInWei,
@@ -74,7 +72,7 @@ async function performInitialTrade(
         ? (swapTx as any).hash
         : String(swapTx);
 
-    // Définir un type explicite pour receipt
+    // Define explicit type for receipt
     interface TransactionReceiptResponse {
       blockNumber?: number;
       hash?: string;
@@ -85,7 +83,7 @@ async function performInitialTrade(
     const receipt = (await provider.waitForTransaction(
       swapTxHash
     )) as TransactionReceiptResponse;
-    console.error(`Achat initial de TCHOG réussi! Hash: ${receipt.hash}`);
+    console.error(`Initial TCHOG purchase successful! Hash: ${receipt.hash}`);
 
     return {
       success: true,
@@ -94,43 +92,43 @@ async function performInitialTrade(
       action: "buy",
     };
   } catch (error) {
-    console.error("Erreur lors de l'achat initial de TCHOG:", error);
+    console.error("Error during initial TCHOG purchase:", error);
     return {
       success: false,
-      message: `Erreur lors de l'achat initial: ${error}`,
+      message: `Error during initial purchase: ${error}`,
     };
   }
 }
 
 server.tool(
   "monad-ai-trader",
-  "Créer et gérer un agent IA auto-améliorant qui trade automatiquement WMON/TCHOG sur Monad Testnet",
+  "Create and manage an AI agent that automatically trades WMON/TCHOG on Monad Testnet",
   {
     privateKey: z
       .string()
-      .describe("Clé privée du wallet à utiliser pour le trading"),
+      .describe("Private key of the wallet to use for trading"),
     initialInvestment: z
       .number()
       .default(0.1)
-      .describe("Montant initial à investir en MON"),
+      .describe("Initial amount to invest in MON"),
     riskLevel: z
       .enum(["conservative", "moderate", "aggressive"])
       .default("moderate")
-      .describe("Niveau de risque pour la stratégie de trading"),
+      .describe("Risk level for trading strategy"),
     learningRate: z
       .number()
       .default(0.1)
-      .describe("Taux d'apprentissage initial de l'agent"),
+      .describe("Initial learning rate of the agent"),
     maxSlippage: z
       .number()
       .default(1.5)
-      .describe("Pourcentage de slippage maximum autorisé"),
+      .describe("Maximum allowed slippage percentage"),
     action: z
       .enum(["create", "start", "stop", "status", "improve"])
       .default("status")
-      .describe("Action à effectuer avec l'agent IA"),
+      .describe("Action to perform with the AI agent"),
   },
-  // @ts-ignore - Type complexe de la réponse
+  // @ts-ignore - Complex response type
   async (
     {
       privateKey,
@@ -143,33 +141,33 @@ server.tool(
     _extra
   ) => {
     try {
-      // Initialisation du wallet pour l'agent
+      // Initialize wallet for agent
       const wallet = new ethers.Wallet(privateKey, provider);
       const agentAddress = wallet.address;
 
-      // Générer un ID unique pour l'agent s'il n'existe pas déjà
+      // Generate unique ID for agent if it doesn't exist
       const agentId = `ai-trader-${agentAddress.substring(2, 8)}`;
 
-      console.error(`Agent IA autonome ${agentId} - Action: ${action}`);
+      console.error(`Autonomous AI agent ${agentId} - Action: ${action}`);
 
-      // Vérifier le solde du wallet
+      // Check wallet balance
       const balance = await provider.getBalance(agentAddress);
-      console.error(`Solde disponible: ${ethers.formatEther(balance)} MON`);
+      console.error(`Available balance: ${ethers.formatEther(balance)} MON`);
 
       if (balance < ethers.parseEther(initialInvestment.toString())) {
         throw new Error(
-          `Solde insuffisant pour démarrer l'agent: ${ethers.formatEther(
+          `Insufficient balance to start agent: ${ethers.formatEther(
             balance
           )} MON`
         );
       }
 
-      // Adresses des contrats sur Monad Testnet
-      const WMON_ADDRESS = "0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701"; // À remplacer par l'adresse réelle
-      const TCHOG_ADDRESS = "0xCaF9244A9D4A79c3229cb354a1919961fa0122B4"; // À remplacer par l'adresse réelle
-      const DEX_ROUTER_ADDRESS = "0xfb8e1c3b833f9e67a71c859a132cf783b645e436"; // À remplacer par l'adresse du router
+      // Contract addresses on Monad Testnet
+      const WMON_ADDRESS = "0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701"; // Replace with actual address
+      const TCHOG_ADDRESS = "0xCaF9244A9D4A79c3229cb354a1919961fa0122B4"; // Replace with actual address
+      const DEX_ROUTER_ADDRESS = "0xfb8e1c3b833f9e67a71c859a132cf783b645e436"; // Replace with router address
 
-      // Définir les interfaces pour les contrats
+      // Define interfaces for contracts
       interface IERC20 extends ethers.BaseContract {
         approve(
           spender: string,
@@ -211,7 +209,7 @@ server.tool(
         ): Promise<ethers.ContractTransaction>;
       }
 
-      // Instancier les contrats
+      // Instantiate contracts
       const wmonContract = new ethers.Contract(
         WMON_ADDRESS,
         ERC20_ABI,
@@ -228,7 +226,7 @@ server.tool(
         wallet
       ) as unknown as IUniswapRouter;
 
-      // Structure pour stocker l'historique de trading et les métriques d'apprentissage
+      // Structure to store trading history and learning metrics
       interface TraderTransaction {
         txHash: string;
         timestamp: string;
@@ -243,7 +241,7 @@ server.tool(
       const agentData = {
         id: agentId,
         address: agentAddress,
-        status: "active", // Toujours actif par défaut
+        status: "active", // Always active by default
         initialCapital: initialInvestment,
         currentBalance: Number(ethers.formatEther(balance)),
         transactions: [] as TraderTransaction[],
@@ -293,22 +291,22 @@ server.tool(
         },
       };
 
-      // Fonctions d'analyse technique simulées (à implémenter avec des calculs réels)
+      // Simulated technical analysis functions (to be implemented with real calculations)
       const technicalAnalysis = {
         calculateRSI: async (pair: string) => {
-          // Simuler une valeur RSI
+          // Simulate RSI value
           return 30 + Math.random() * 40;
         },
         calculateMACD: async (pair: string) => {
-          // Simuler un signal MACD
+          // Simulate MACD signal
           return Math.random() - 0.5;
         },
         calculateEMA: async (pair: string, period: number) => {
-          // Simuler une valeur EMA
+          // Simulate EMA value
           return 0.00015 + (Math.random() * 0.00002 - 0.00001);
         },
         detectPricePattern: async (pair: string) => {
-          // Simuler une détection de motif
+          // Simulate pattern detection
           const patterns = [
             "double_bottom",
             "head_shoulders",
@@ -319,32 +317,32 @@ server.tool(
         },
       };
 
-      // Fonction pour exécuter une transaction réelle
+      // Function to execute a real transaction
       const executeTransaction = async (action: string, amount: number) => {
         console.error(
-          `Exécution d'une transaction réelle: ${action} ${amount} TCHOG...`
+          `Executing real transaction: ${action} ${amount} TCHOG...`
         );
 
         try {
-          // Obtenir les balances actuelles
+          // Get current balances
           const wmonBalance = await wmonContract.balanceOf(wallet.address);
           const tchogBalance = await tchogContract.balanceOf(wallet.address);
 
           console.error(
-            `Balances actuelles - WMON: ${ethers.formatUnits(
+            `Current balances - WMON: ${ethers.formatUnits(
               wmonBalance,
               18
             )}, TCHOG: ${ethers.formatUnits(tchogBalance, 18)}`
           );
 
-          // Vérifier si l'utilisateur a assez de tokens pour la transaction
+          // Check if user has enough tokens for transaction
           if (
             action === "buy" &&
             wmonBalance < ethers.parseEther(amount.toString())
           ) {
             return {
               success: false,
-              error: `Solde WMON insuffisant pour acheter ${amount} TCHOG`,
+              error: `Insufficient WMON balance to buy ${amount} TCHOG`,
             };
           } else if (
             action === "sell" &&
@@ -352,39 +350,37 @@ server.tool(
           ) {
             return {
               success: false,
-              error: `Solde TCHOG insuffisant pour vendre ${amount} TCHOG`,
+              error: `Insufficient TCHOG balance to sell ${amount} TCHOG`,
             };
           }
 
-          // Calculer le montant à trader
+          // Calculate amount to trade
           const amountIn =
             action === "buy"
               ? ethers.parseEther(amount.toString())
               : ethers.parseUnits(amount.toString(), 18);
 
-          // Approuver le router à dépenser nos tokens si c'est une vente
+          // Approve router to spend our tokens if it's a sell
           if (action === "sell") {
-            console.error(
-              `Approbation du router pour dépenser ${amount} TCHOG`
-            );
-            // Dans ethers.js v6, await sur la transaction directement
+            console.error(`Approving router to spend ${amount} TCHOG`);
+            // In ethers.js v6, await directly on transaction
             const receipt = await tchogContract.approve(
               DEX_ROUTER_ADDRESS,
               amountIn
             );
-            console.error(`Approbation réussie pour ${amount} TCHOG`);
+            console.error(`Approval successful for ${amount} TCHOG`);
           } else if (action === "buy") {
-            console.error(`Approbation du router pour dépenser ${amount} WMON`);
-            // Dans ethers.js v6, await sur la transaction directement
+            console.error(`Approving router to spend ${amount} WMON`);
+            // In ethers.js v6, await directly on transaction
             const receipt = await wmonContract.approve(
               DEX_ROUTER_ADDRESS,
               amountIn
             );
-            console.error(`Approbation réussie pour ${amount} WMON`);
+            console.error(`Approval successful for ${amount} WMON`);
           }
 
-          // Calculer le slippage (0.5% par défaut)
-          const slippageTolerance = 99.5; // 0.5% de slippage
+          // Calculate slippage (0.5% default)
+          const slippageTolerance = 99.5; // 0.5% slippage
           const minAmountOut = ethers.parseUnits(
             (
               ((action === "buy" ? amount * 0.00015 : amount) *
@@ -394,23 +390,23 @@ server.tool(
             18
           );
 
-          // Configurer les paramètres de transaction
+          // Configure transaction parameters
           const deadline = Math.floor(Date.now() / 1000) + 300; // 5 minutes
 
-          // Chemin de swap
+          // Swap path
           const path =
             action === "buy"
               ? [WMON_ADDRESS, TCHOG_ADDRESS]
               : [TCHOG_ADDRESS, WMON_ADDRESS];
 
-          // Exécuter le swap avec le wallet réel de l'utilisateur
+          // Execute swap with user's real wallet
           const routerWithSigner = routerContract.connect(
             wallet
           ) as IUniswapRouter;
 
           let swapTx;
           if (action === "buy") {
-            console.error(`Exécution d'un swap pour acheter ${amount} TCHOG`);
+            console.error(`Executing swap to buy ${amount} TCHOG`);
             swapTx = await routerWithSigner.swapExactTokensForTokens(
               amountIn,
               minAmountOut,
@@ -420,7 +416,7 @@ server.tool(
               { gasLimit: 500000 }
             );
           } else {
-            console.error(`Exécution d'un swap pour vendre ${amount} TCHOG`);
+            console.error(`Executing swap to sell ${amount} TCHOG`);
             swapTx = await routerWithSigner.swapExactTokensForTokens(
               amountIn,
               minAmountOut,
@@ -436,7 +432,7 @@ server.tool(
               ? (swapTx as any).hash
               : String(swapTx);
 
-          // Définir un type explicite pour receipt
+          // Define explicit type for receipt
           interface TransactionReceiptResponse {
             blockNumber?: number;
             hash?: string;
@@ -448,11 +444,11 @@ server.tool(
             swapTxHash
           )) as TransactionReceiptResponse;
 
-          // Récupérer les balances mises à jour
+          // Get updated balances
           const newWmonBalance = await wmonContract.balanceOf(wallet.address);
           const newTchogBalance = await tchogContract.balanceOf(wallet.address);
 
-          // Calculer le profit/perte réel
+          // Calculate real profit/loss
           const wmonDiff = newWmonBalance - wmonBalance;
           const tchogDiff = newTchogBalance - tchogBalance;
 
@@ -461,7 +457,7 @@ server.tool(
               ? ethers.formatUnits(tchogDiff, 18)
               : ethers.formatUnits(wmonDiff, 18);
 
-          // Enregistrer la transaction dans l'historique
+          // Record transaction in history
           const txDetails = {
             txHash: receipt?.hash || swapTxHash,
             timestamp: new Date().toISOString(),
@@ -485,9 +481,7 @@ server.tool(
           };
 
           agentData.transactions.push(txDetails);
-          console.error(
-            `Transaction réelle enregistrée: ${action} ${amount} TCHOG`
-          );
+          console.error(`Real transaction recorded: ${action} ${amount} TCHOG`);
 
           return {
             success: true,
@@ -495,9 +489,7 @@ server.tool(
             details: txDetails,
           };
         } catch (error: any) {
-          console.error(
-            `Erreur lors de l'exécution de la transaction réelle: ${error}`
-          );
+          console.error(`Error during real transaction execution: ${error}`);
           return {
             success: false,
             error: error.message,
@@ -505,21 +497,19 @@ server.tool(
         }
       };
 
-      // Fonction pour prendre une décision de trading basée sur l'analyse de données réelles
+      // Function to make trading decision based on real data analysis
       const makeDecision = async () => {
-        console.error("Analyse du marché WMON/TCHOG avec données réelles...");
+        console.error("Analyzing WMON/TCHOG market with real data...");
 
         try {
           let priceData;
 
-          // Essayer d'obtenir des données réelles via l'API Mobula pour la paire
+          // Try to get real data via Mobula API for the pair
           try {
-            console.error(
-              "Tentative de récupération des données de paire via l'API Mobula..."
-            );
+            console.error("Attempting to retrieve pair data via Mobula API...");
 
-            // L'adresse de la paire WMON/TCHOG (modifier l'adresse selon votre paire réelle)
-            const PAIR_ADDRESS = "0xfb8e1c3b833f9e67a71c859a132cf783b645e436"; // Remplacer par l'adresse réelle de la paire
+            // The WMON/TCHOG pair address (modify address according to your real pair)
+            const PAIR_ADDRESS = "0xfb8e1c3b833f9e67a71c859a132cf783b645e436"; // Replace with actual pair address
 
             const response = await fetch(
               `https://api.mobula.io/api/1/market/history/pair?address=${PAIR_ADDRESS}&period=1h&amount=2`
@@ -538,14 +528,14 @@ server.tool(
                 Array.isArray(pairData.data) &&
                 pairData.data.length > 0
               ) {
-                // L'API de paire retourne des données OHLCV
+                // The pair API returns OHLCV data
                 const ohlcvData = pairData.data;
 
-                // Extraire le prix de clôture (close) le plus récent pour le prix actuel
+                // Extract the most recent closing price for current price
                 const latestCandle = ohlcvData[ohlcvData.length - 1];
                 const earlierCandle = ohlcvData[0];
 
-                // Calculer la variation sur la dernière heure (2 points de données)
+                // Calculate change over last hour (2 data points)
                 const change =
                   ((latestCandle.close - earlierCandle.close) /
                     earlierCandle.close) *
@@ -559,38 +549,36 @@ server.tool(
                 };
 
                 console.error(
-                  `Données réelles de paire obtenues - Prix: ${
+                  `Real pair data obtained - Price: ${
                     priceData.price
-                  }, Variation: ${priceData.change24h.toFixed(2)}%`
+                  }, Change: ${priceData.change24h.toFixed(2)}%`
                 );
               } else {
-                throw new Error("Format de données de paire invalide");
+                throw new Error("Invalid pair data format");
               }
             } else {
               throw new Error(
-                `Erreur ${response.status}: ${response.statusText}`
+                `Error ${response.status}: ${response.statusText}`
               );
             }
           } catch (apiError) {
             console.error(
-              "Échec de récupération des données de paire via l'API Mobula, utilisation de données simulées:",
+              "Failed to retrieve pair data via Mobula API, using simulated data:",
               apiError
             );
 
-            // Utiliser des données simulées comme fallback
+            // Use simulated data as fallback
             priceData = {
               price: 0.00015,
-              change24h: Math.random() * 10 - 5, // -5% à +5%
+              change24h: Math.random() * 10 - 5, // -5% to +5%
               volume24h: 1000000 + Math.random() * 500000,
               lastUpdated: new Date().toISOString(),
             };
 
-            console.error(
-              "Utilisation de données simulées pour l'analyse du marché"
-            );
+            console.error("Using simulated data for market analysis");
           }
 
-          // Vérification que priceData est bien défini
+          // Verify that priceData is defined
           if (!priceData) {
             priceData = {
               price: 0.00015,
@@ -600,36 +588,36 @@ server.tool(
             };
           }
 
-          // Simuler des indicateurs techniques simplifiés
+          // Simulate simplified technical indicators
           const indicators = {
             price: priceData.price,
             change24h: priceData.change24h,
             volume24h: priceData.volume24h,
-            rsi: 50 + priceData.change24h * 2, // Simulation simplifiée
-            ema: priceData.price * (1 + priceData.change24h / 200), // Simulation simplifiée
-            macd: priceData.change24h / 2, // Simulation simplifiée
+            rsi: 50 + priceData.change24h * 2, // Simplified simulation
+            ema: priceData.price * (1 + priceData.change24h / 200), // Simplified simulation
+            macd: priceData.change24h / 2, // Simplified simulation
             lastUpdated: priceData.lastUpdated,
           };
 
-          // Stratégie de trading simple basée sur les valeurs simulées
+          // Simple trading strategy based on simulated values
           let decision = "hold";
           let confidence = 0.5;
           let amount = 0;
 
-          // Si le RSI est bas et le prix baisse, c'est peut-être une opportunité d'achat
+          // If RSI is low and price is falling, might be a buying opportunity
           if (indicators.rsi < 30 && indicators.change24h < -2) {
             decision = "buy";
             confidence =
               0.7 + Math.min(0.2, Math.abs(indicators.change24h) / 100);
-            amount = Math.floor(10 + Math.random() * 90); // Entre 10 et 100 unités
+            amount = Math.floor(10 + Math.random() * 90); // Between 10 and 100 units
           }
-          // Si le RSI est élevé et le prix monte rapidement, envisager de vendre
+          // If RSI is high and price is rising quickly, consider selling
           else if (indicators.rsi > 70 && indicators.change24h > 2) {
             decision = "sell";
             confidence = 0.7 + Math.min(0.2, indicators.change24h / 100);
             amount = Math.floor(10 + Math.random() * 90);
           }
-          // Sinon, conserver la position actuelle
+          // Otherwise, maintain current position
           else {
             decision = "hold";
             confidence = 0.5 + Math.random() * 0.3;
@@ -637,7 +625,7 @@ server.tool(
           }
 
           console.error(
-            `Décision: ${decision.toUpperCase()} ${amount} TCHOG (Confiance: ${(
+            `Decision: ${decision.toUpperCase()} ${amount} TCHOG (Confidence: ${(
               confidence * 100
             ).toFixed(2)}%)`
           );
@@ -650,7 +638,7 @@ server.tool(
             timestamp: new Date().toISOString(),
           };
         } catch (error: any) {
-          console.error(`Erreur lors de l'analyse du marché: ${error}`);
+          console.error(`Error during market analysis: ${error}`);
           return {
             decision: "hold",
             amount: 0,
@@ -661,21 +649,19 @@ server.tool(
         }
       };
 
-      // Fonction pour améliorer l'agent basée sur ses performances passées
+      // Function to improve agent based on past performance
       const improveAgent = () => {
-        console.error(
-          "Amélioration de l'agent IA basée sur l'historique de trading..."
-        );
+        console.error("Improving AI agent based on trading history...");
 
         if (agentData.transactions.length < 5) {
           return {
             success: false,
             message:
-              "Données insuffisantes pour améliorer l'agent (minimum 5 transactions)",
+              "Insufficient data to improve agent (minimum 5 transactions)",
           };
         }
 
-        // Calculer les métriques de performance
+        // Calculate performance metrics
         const profits = agentData.transactions
           .filter((tx) => tx.status === "completed")
           .map((tx) => parseFloat(tx.profit));
@@ -687,7 +673,7 @@ server.tool(
         const averageProfit =
           totalCount > 0 ? profits.reduce((a, b) => a + b, 0) / totalCount : 0;
 
-        // Calculer le ratio de Sharpe simplifié
+        // Calculate simplified Sharpe ratio
         const returns = profits.map((p) => p / 100);
         const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
         const stdDeviation = Math.sqrt(
@@ -696,21 +682,21 @@ server.tool(
         );
         const sharpeRatio = stdDeviation > 0 ? meanReturn / stdDeviation : 0;
 
-        // Mettre à jour les paramètres d'apprentissage
+        // Update learning parameters
         agentData.learningMetrics.successRate = successRate;
         agentData.learningMetrics.averageProfit = averageProfit;
         agentData.learningMetrics.sharpeRatio = sharpeRatio;
         agentData.learningMetrics.improvementIterations++;
 
-        // Réduire le taux d'exploration avec le temps pour favoriser l'exploitation
+        // Reduce exploration rate over time to favor exploitation
         agentData.learningMetrics.explorationRate = Math.max(
           0.05,
           agentData.learningMetrics.explorationRate * 0.9
         );
 
-        // Ajuster les paramètres de stratégie en fonction des performances
+        // Adjust strategy parameters based on performance
         if (successRate > 0.6) {
-          // Stratégie performante, augmenter la taille des positions
+          // Successful strategy, increase position size
           agentData.strategyParams.positionSizePercent = Math.min(
             agentData.strategyParams.positionSizePercent * 1.1,
             riskLevel === "conservative"
@@ -720,7 +706,7 @@ server.tool(
               : 60
           );
         } else if (successRate < 0.4) {
-          // Stratégie peu performante, réduire la taille des positions
+          // Unsuccessful strategy, reduce position size
           agentData.strategyParams.positionSizePercent = Math.max(
             agentData.strategyParams.positionSizePercent * 0.9,
             riskLevel === "conservative"
@@ -731,13 +717,13 @@ server.tool(
           );
         }
 
-        // Ajuster les seuils d'entrée/sortie
+        // Adjust entry/exit thresholds
         if (averageProfit > 0) {
-          agentData.strategyParams.takeProfitPercent *= 1.05; // Viser des profits plus élevés
-          agentData.strategyParams.stopLossPercent *= 0.95; // Réduire les pertes
+          agentData.strategyParams.takeProfitPercent *= 1.05; // Aim for higher profits
+          agentData.strategyParams.stopLossPercent *= 0.95; // Reduce losses
         } else {
-          agentData.strategyParams.takeProfitPercent *= 0.95; // Réduire les attentes
-          agentData.strategyParams.stopLossPercent *= 1.05; // Augmenter la tolérance aux pertes
+          agentData.strategyParams.takeProfitPercent *= 0.95; // Lower expectations
+          agentData.strategyParams.stopLossPercent *= 1.05; // Increase loss tolerance
         }
 
         agentData.lastImprovement = new Date().toISOString();
@@ -752,10 +738,10 @@ server.tool(
         };
       };
 
-      // Traiter l'action demandée
+      // Process requested action
       let result = null;
 
-      // Définition des types pour chaque action
+      // Define types for each action
       type CreateResult = {
         success: boolean;
         agentId: string;
@@ -816,7 +802,7 @@ server.tool(
         lastImprovement: string;
       };
 
-      // Type guards pour vérifier le type de résultat
+      // Type guards to check result type
       const isCreateResult = (result: any): result is CreateResult =>
         action === "create";
 
@@ -838,14 +824,14 @@ server.tool(
           result = {
             success: true,
             agentId,
-            message: `Agent IA autonome créé: ${agentId}`,
+            message: `Autonomous AI agent created: ${agentId}`,
             address: agentAddress,
-            status: "active", // Actif dès la création
+            status: "active", // Active from creation
             initialCapital: initialInvestment,
             riskLevel,
           } as CreateResult;
 
-          // Après avoir créé l'agent, effectuer un achat initial
+          // After creating agent, perform initial purchase
           if (agentAddress) {
             try {
               const tradeResult = await performInitialTrade(
@@ -853,38 +839,36 @@ server.tool(
                 initialInvestment
               );
 
-              // Ajouter la transaction à l'historique de l'agent si le trade a réussi
+              // Add transaction to agent history if trade successful
               if (tradeResult.success) {
                 const transaction: TraderTransaction = {
                   txHash: tradeResult.txHash || "",
                   timestamp: new Date().toISOString(),
                   action: "buy",
                   amount: String(tradeResult.amount),
-                  price: "0", // À remplir plus tard avec le prix réel
-                  gasUsed: "0", // À remplir plus tard avec le gas réel
+                  price: "0", // To be filled later with real price
+                  gasUsed: "0", // To be filled later with real gas
                   profit: "0",
                   status: "completed",
                 };
 
                 agentData.transactions.push(transaction);
 
-                // Ajouter l'information du trade initial dans le résultat
+                // Add initial trade information to result
                 (result as CreateResult).initialTrade = {
                   success: true,
                   action: "buy",
-                  amount: tradeResult.amount ?? 0, // Utiliser 0 si amount est undefined
+                  amount: tradeResult.amount ?? 0, // Use 0 if amount is undefined
                   txHash: tradeResult.txHash || "",
                 };
               } else {
-                console.error("L'achat initial a échoué:", tradeResult.message);
+                console.error("Initial purchase failed:", tradeResult.message);
               }
 
-              // Démarrer immédiatement une décision de trading après la création
-              console.error(
-                "Démarrage automatique du trading après création..."
-              );
+              // Start trading decision immediately after creation
+              console.error("Starting automatic trading after creation...");
 
-              // Prendre une décision de trading
+              // Make trading decision
               const decision = await makeDecision();
 
               if (
@@ -892,45 +876,43 @@ server.tool(
                 decision.confidence > agentData.strategyParams.entryThreshold
               ) {
                 console.error(
-                  `Décision de trading auto: ${decision.decision.toUpperCase()} ${
+                  `Auto trading decision: ${decision.decision.toUpperCase()} ${
                     decision.amount
                   } TCHOG`
                 );
 
-                // Exécuter la transaction
+                // Execute transaction
                 const txResult = await executeTransaction(
                   decision.decision,
                   decision.amount
                 );
 
                 if (txResult.success) {
-                  console.error(`Transaction auto réussie: ${txResult.txHash}`);
-                } else {
                   console.error(
-                    `Échec de la transaction auto: ${txResult.error}`
+                    `Auto transaction successful: ${txResult.txHash}`
                   );
+                } else {
+                  console.error(`Auto transaction failed: ${txResult.error}`);
                 }
               } else {
-                console.error(
-                  `Décision HOLD - Pas de trading auto pour le moment`
-                );
+                console.error(`HOLD decision - No auto trading for now`);
               }
             } catch (tradeError) {
-              console.error("Erreur lors de l'achat initial:", tradeError);
+              console.error("Error during initial purchase:", tradeError);
             }
           }
 
           break;
 
         case "start":
-          // Prendre une décision de trading
+          // Make trading decision
           const decision = await makeDecision();
 
           if (
             decision.decision !== "hold" &&
             decision.confidence > agentData.strategyParams.entryThreshold
           ) {
-            // Exécuter la transaction
+            // Execute transaction
             const txResult = await executeTransaction(
               decision.decision,
               decision.amount
@@ -944,23 +926,23 @@ server.tool(
               confidence: decision.confidence,
               txHash: txResult.success ? txResult.txHash : null,
               message: txResult.success
-                ? `Transaction réussie: ${
+                ? `Transaction successful: ${
                     decision.decision ? decision.decision.toUpperCase() : "NONE"
                   } ${decision.amount || 0} TCHOG
-  Confiance: ${
+  Confidence: ${
     decision.confidence ? (decision.confidence * 100).toFixed(2) : "0"
   }%
   Hash: ${txResult.txHash || "N/A"}`
-                : `Échec de la transaction: ${txResult.error}`,
+                : `Transaction failed: ${txResult.error}`,
             };
           } else {
             result = {
               success: true,
               agentId,
               action: "hold",
-              message: `Décision: HOLD - Confiance insuffisante (${(
+              message: `Decision: HOLD - Insufficient confidence (${(
                 decision.confidence * 100
-              ).toFixed(2)}%) ou meilleure opportunité non détectée`,
+              ).toFixed(2)}%) or no better opportunity detected`,
               indicators: decision.indicators,
             };
           }
@@ -970,7 +952,7 @@ server.tool(
           result = {
             success: true,
             agentId,
-            message: `Agent IA arrêté: ${agentId}`,
+            message: `AI agent stopped: ${agentId}`,
             status: "idle",
           };
           break;
@@ -982,7 +964,7 @@ server.tool(
             success: improvementResult.success,
             agentId,
             message: improvementResult.success
-              ? `Agent IA amélioré après ${improvementResult.iterations} itérations`
+              ? `AI agent improved after ${improvementResult.iterations} iterations`
               : improvementResult.message,
             metrics: improvementResult.success
               ? {
@@ -1000,13 +982,13 @@ server.tool(
 
         case "status":
         default:
-          // Récupérer le statut actuel
+          // Get current status
           result = {
             success: true,
             agentId,
             address: agentAddress,
             balance: ethers.formatEther(balance),
-            status: "active", // Toujours en mode actif
+            status: "active", // Always in active mode
             transactions: agentData.transactions.length,
             riskLevel,
             learningMetrics: agentData.learningMetrics,
@@ -1016,111 +998,111 @@ server.tool(
           break;
       }
 
-      // Générer la sortie
+      // Generate output
       let output = `
-  🤖 AGENT IA AUTONOME DE TRADING ${
+  🤖 AUTONOMOUS AI TRADING AGENT ${
     action === "create"
-      ? "CRÉÉ"
+      ? "CREATED"
       : action === "start"
-      ? "DÉMARRÉ"
+      ? "STARTED"
       : action === "stop"
-      ? "ARRÊTÉ"
+      ? "STOPPED"
       : action === "improve"
-      ? "AMÉLIORÉ"
-      : "STATUT"
+      ? "IMPROVED"
+      : "STATUS"
   }
   
   ID: ${agentId}
-  Adresse: ${agentAddress}
-  Solde: ${ethers.formatEther(balance)} MON
-  Statut: ${
+  Address: ${agentAddress}
+  Balance: ${ethers.formatEther(balance)} MON
+  Status: ${
     result && "status" in result
       ? result.status
       : action === "start"
-      ? "actif"
-      : "inactif"
+      ? "active"
+      : "inactive"
   }
-  Niveau de risque: ${riskLevel.toUpperCase()}
+  Risk Level: ${riskLevel.toUpperCase()}
   
   ${
     action === "create" && isCreateResult(result)
-      ? `✅ Agent IA créé avec succès
-  Capital initial: ${initialInvestment} MON
+      ? `✅ AI agent created successfully
+  Initial capital: ${initialInvestment} MON
   ${
     result.initialTrade && result.initialTrade.success
-      ? `✅ Achat initial: ${result.initialTrade.amount} WMON → TCHOG
+      ? `✅ Initial purchase: ${result.initialTrade.amount} WMON → TCHOG
   Hash: ${result.initialTrade.txHash}`
-      : "⚠️ Achat initial non effectué"
+      : "⚠️ Initial purchase not performed"
   }
-  Pour démarrer l'agent: monad-ai-trader-autonomous --action=start --privateKey=${privateKey.substring(
+  To start agent: monad-ai-trader-autonomous --action=start --privateKey=${privateKey.substring(
     0,
     6
   )}...`
       : action === "start" && isStartResult(result)
       ? `${
           result.success
-            ? `✅ Transaction exécutée: ${
+            ? `✅ Transaction executed: ${
                 result.action ? result.action.toUpperCase() : "NONE"
               } ${result.amount || 0} TCHOG
-  Confiance: ${result.confidence ? (result.confidence * 100).toFixed(2) : "0"}%
+  Confidence: ${result.confidence ? (result.confidence * 100).toFixed(2) : "0"}%
   Hash: ${result.txHash || "N/A"}`
-            : `❌ ${result.message || "Erreur inconnue"}`
+            : `❌ ${result.message || "Unknown error"}`
         }`
       : action === "stop" && isStopResult(result)
-      ? `✅ Agent IA arrêté`
+      ? `✅ AI agent stopped`
       : action === "improve" && isImproveResult(result)
       ? `${
           result.success
-            ? `✅ Agent IA amélioré après ${
+            ? `✅ AI agent improved after ${
                 result.metrics && result.metrics.iterations
                   ? result.metrics.iterations
                   : "N/A"
-              } itérations
-  Taux de succès: ${
+              } iterations
+  Success rate: ${
     result.metrics && result.metrics.successRate
       ? (result.metrics.successRate * 100).toFixed(2)
       : "N/A"
   }%
-  Profit moyen: ${
+  Average profit: ${
     result.metrics && result.metrics.averageProfit
       ? result.metrics.averageProfit.toFixed(6)
       : "N/A"
   } MON
-  Ratio de Sharpe: ${
+  Sharpe ratio: ${
     result.metrics && result.metrics.sharpeRatio
       ? result.metrics.sharpeRatio.toFixed(2)
       : "N/A"
   }
   
-  NOUVEAUX PARAMÈTRES:
-  - Taille de position: ${
+  NEW PARAMETERS:
+  - Position size: ${
     result.newParams ? result.newParams.positionSizePercent.toFixed(2) : "N/A"
   }%
-  - Seuil d'entrée: ${
+  - Entry threshold: ${
     result.newParams ? result.newParams.entryThreshold.toFixed(2) : "N/A"
   }`
-            : `❌ ${result.message || "Erreur inconnue"}`
+            : `❌ ${result.message || "Unknown error"}`
         }`
       : isStatusResult(result)
-      ? `📊 STATUT DE L'AGENT IA
-  Transactions totales: ${result.transactions || 0}
-  Taux d'apprentissage: ${
+      ? `📊 AI AGENT STATUS
+  Total transactions: ${result.transactions || 0}
+  Learning rate: ${
     result.learningMetrics ? result.learningMetrics.learningRate : learningRate
   }
-  Taux d'exploration: ${
+  Exploration rate: ${
     result.learningMetrics
       ? result.learningMetrics.explorationRate.toFixed(3)
       : "0.200"
   }
-  Dernière amélioration: ${result.lastImprovement || "Jamais"}
+  Last improvement: ${result.lastImprovement || "Never"}
   
-  PARAMÈTRES DE STRATÉGIE:
-  - Taille de position: ${
+  STRATEGY PARAMETERS:
+  - Position size: ${
     result.strategyParams
       ? result.strategyParams.positionSizePercent.toFixed(2)
       : "N/A"
   }%
-  - Seuil d'entrée: ${
+  - Entry threshold: ${
     result.strategyParams
       ? result.strategyParams.entryThreshold.toFixed(2)
       : "N/A"
@@ -1138,14 +1120,14 @@ server.tool(
       : ""
   }
   
-  COMMANDES DISPONIBLES:
-  - Pour créer un agent: monad-ai-trader-autonomous --action=create --privateKey=<votre_clé>
-  - Pour démarrer un agent: monad-ai-trader-autonomous --action=start --privateKey=<votre_clé>
-  - Pour améliorer un agent: monad-ai-trader-autonomous --action=improve --privateKey=<votre_clé>
-  - Pour arrêter un agent: monad-ai-trader-autonomous --action=stop --privateKey=<votre_clé>
+  AVAILABLE COMMANDS:
+  - To create an agent: monad-ai-trader-autonomous --action=create --privateKey=<your_key>
+  - To start an agent: monad-ai-trader-autonomous --action=start --privateKey=<your_key>
+  - To improve an agent: monad-ai-trader-autonomous --action=improve --privateKey=<your_key>
+  - To stop an agent: monad-ai-trader-autonomous --action=stop --privateKey=<your_key>
   
-  NOTE: L'agent IA exécute des transactions réelles sur Monad Testnet.
-  Toutes les transactions sont vérifiables dans l'explorateur Monad.
+  NOTE: The AI agent executes real transactions on Monad Testnet.
+  All transactions are verifiable in the Monad explorer.
   `;
 
       return {
@@ -1157,15 +1139,12 @@ server.tool(
         ],
       };
     } catch (error) {
-      console.error(
-        "Erreur lors de l'exécution de l'agent IA autonome:",
-        error
-      );
+      console.error("Error during autonomous AI agent execution:", error);
       return {
         content: [
           {
             type: "text",
-            text: `❌ Erreur lors de l'exécution de l'agent IA autonome: ${error}`,
+            text: `❌ Error during autonomous AI agent execution: ${error}`,
           },
         ],
       };
@@ -1177,13 +1156,13 @@ async function main() {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Serveur MCP Monad testnet lancé sur stdio");
+    console.error("MCP Monad testnet server started on stdio");
   } catch (error) {
-    console.error("Erreur d'initialisation du serveur:", error);
+    console.error("Server initialization error:", error);
   }
 }
 
 main().catch((error) => {
-  console.error("Erreur fatale dans main():", error);
+  console.error("Fatal error in main():", error);
   process.exit(1);
 });

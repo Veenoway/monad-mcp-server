@@ -1,3 +1,12 @@
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { ethers } from "ethers";
@@ -19,27 +28,27 @@ export const server = new McpServer({
 
 server.tool(
   "monad-faucet",
-  "Obtenir 0.2 MON sur Monad Testnet pour tester vos applications",
+  "Get 0.2 MON on Monad Testnet to test your applications",
   {
     walletAddress: z
       .string()
-      .describe("Adresse du wallet qui recevra les tokens"),
+      .describe("Wallet address that will receive the tokens"),
   },
   async ({ walletAddress }, extra) => {
     try {
       if (!ethers.isAddress(walletAddress)) {
-        throw new Error(`Adresse de wallet invalide: ${walletAddress}`);
+        throw new Error(`Invalid wallet address: ${walletAddress}`);
       }
 
-      console.error(`Préparation de l'envoi de MON vers ${walletAddress}...`);
+      console.error(`Preparing to send MON to ${walletAddress}...`);
 
-      const faucetPrivateKey = "PRIVATE_KEY";
+      const faucetPrivateKey = process.env.PRIVATE_KEY as string;
       const senderWallet = new ethers.Wallet(faucetPrivateKey, provider);
       const senderAddress = senderWallet.address;
 
       const senderBalance = await provider.getBalance(senderAddress);
       console.error(
-        `Solde du wallet émetteur (${senderAddress}): ${ethers.formatEther(
+        `Sender wallet balance (${senderAddress}): ${ethers.formatEther(
           senderBalance
         )} MON`
       );
@@ -48,14 +57,14 @@ server.tool(
 
       if (senderBalance < amountToSend) {
         throw new Error(
-          `Solde insuffisant: votre wallet a ${ethers.formatEther(
+          `Insufficient balance: your wallet has ${ethers.formatEther(
             senderBalance
-          )} MON, mais l'envoi nécessite 0.2 MON`
+          )} MON, but sending requires 0.2 MON`
         );
       }
 
       console.error(
-        `Envoi de 0.2 MON depuis ${senderAddress} vers ${walletAddress}...`
+        `Sending 0.2 MON from ${senderAddress} to ${walletAddress}...`
       );
 
       const tx = await senderWallet.sendTransaction({
@@ -64,29 +73,29 @@ server.tool(
         gasLimit: ethers.toBigInt("300000"),
       });
 
-      console.error(`Transaction envoyée: ${tx.hash}`);
+      console.error(`Transaction sent: ${tx.hash}`);
 
       const receipt = await provider.waitForTransaction(tx.hash);
 
       if (!receipt || receipt.status === 0) {
-        throw new Error(`La transaction a échoué: ${tx.hash}`);
+        throw new Error(`Transaction failed: ${tx.hash}`);
       }
 
       return {
         content: [
           {
             type: "text",
-            text: `✅ 0.2 MON envoyés avec succès à ${walletAddress}\nTransaction: ${tx.hash}\nEnvoyé depuis: ${senderAddress}`,
+            text: `✅ 0.2 MON successfully sent to ${walletAddress}\nTransaction: ${tx.hash}\nSent from: ${senderAddress}`,
           },
         ],
       };
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("Error:", error);
       return {
         content: [
           {
             type: "text",
-            text: `❌ Erreur lors de l'envoi des tokens: ${error}`,
+            text: `❌ Error sending tokens: ${error}`,
           },
         ],
       };
@@ -98,13 +107,13 @@ async function main() {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Serveur MCP Monad testnet lancé sur stdio");
+    console.error("MCP Monad testnet server started on stdio");
   } catch (error) {
-    console.error("Erreur d'initialisation du serveur:", error);
+    console.error("Server initialization error:", error);
   }
 }
 
 main().catch((error) => {
-  console.error("Erreur fatale dans main():", error);
+  console.error("Fatal error in main():", error);
   process.exit(1);
 });
