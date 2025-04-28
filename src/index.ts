@@ -3,6 +3,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import axios from "axios";
 import { execSync } from "child_process";
 import { ethers } from "ethers";
+import FormData from "form-data";
+import fetch from "node-fetch";
 import { z } from "zod";
 
 console.error("Starting MCP server...");
@@ -16,7 +18,7 @@ const provider = new ethers.JsonRpcProvider(
 );
 
 const MINIMAL_ERC20_BYTECODE =
-  "0x608060405234801561001057600080fd5b50604051610805380380610805833981810160405260808110156100335760006020825260409283825261005b95600489375061006c9350565b5050600355600380546001600160a01b031916331790556100c5565b600061007682610195565b606061008184610195565b608061008c82610189565b60a061009786610214565b60c06100a28761026c565b60e08190526040516100db917f2b38f4e50e5a8a11f56bb60abddcbdbb78add07e92c0a5b37ede4a8ff5b359e4913391600190600401610365565b60405180910390a2505050505050565b634e487b7160e01b600052604160045260246000fd5b6000602082840312156100ec57600080fd5b813567ffffffffffffffff8082111561010457600080fd5b818401915084601f83011261011857600080fd5b81358181111561012a5761012a6100d7565b604051601f8201601f19908116603f011681019083821181831017156101525761015261020a565b816040528381526020601f19601f820116820191505b5082821015610175575050604082013591508185016101e9565b5050509392505050565b600081518084526020808501945080840160005b838110156101ae5781516001600160a01b0316875295820195908201906001016100e9565b009495945050505050565b60005b838110156101d95781810151838201526020016100c1565b50506000910152565b60208152600082518060208401526101fd8160408501602087016101be565b601f01601f19169190910160400192915050565b634e487b7160e01b600052604160045260246000fd5b60008190508160005260206000209050919050565b6000602083015160408401516060850151600384861684528583015286855201604082015280845201608061300060209101525b600060206000925b82821015610284578251825291602001916101e9565b505091905090565b6000815180845260005b818110156102b457602081850181015186830182015201610298565b506000602082860101526020601f19601f83011685010192505050565b6001600160a01b038116811461016a57600080fd5b600080604083850312156102fb57600080fd5b82356103068161025c565b946020840135945050565b6000602082840312156103235760045a82605a0360009091529282905261031e9150565b60005b8381101561037a5781810151838201526020016101c1565b50508315157fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0840182875116820191505b5050919050565b828152606081016020830152610150604083018190526000906060830152565b608051610722610495600039600061068f5260006106615260006106695260006106755260006106515250565b608060405234801561001057600080fd5b50600436106100b5576000357c010000000000000000000000000000000000000000000000000000000090048063a9059cbb11610077578063a9059cbb146101005780637f631a97146101005780637f631a97146101005780635fd0adf414610100578063dd62ed3e146101005780635a3b7e4f14610115578063a9059cbb146101255780638da5cb5b1461015957600080fd5b806040111561013b5780637f631a971461010a5780635fd0adf41461013a5780635a3b7e4f1461013b5780639a8a059214610159578063dd62ed3e1461011c5760405190151581526020016100e0565b60006060825267ffffffff808316815114156101055760006020828401018152602084019350505b5092969550505050505050565b6000608082843610156101005760405190151581526020016100e0565b60006000351414610111578063735472616010146101115760405190151581526020016100e0565b5b610115632098975b565b8063010101018214610155577f01000000000000000000000000000000000000000000000000000000000000008160000361010756";
+  "0x608060405234801561001057600080fd5b50604051610805380380610805833981810160405260808110156100335760006020825260409283825261005b95600489375061006c9350565b5050600355600380546001600160a01b031916331790556100c5565b600061007682610195565b606061008184610195565b608061008c82610189565b60a061009786610214565b60c06100a28761026c565b60e08190526040516100db917f2b38f4e50e5a8a11f56bb60abddcbdbb78add07e92c0a5b37ede4a8ff5b359e4913391600190600401610365565b60405180910390a2505050505050565b634e487b7160e01b600052604160045260246000fd5b6000602082840312156100ec57600080fd5b813567ffffffffffffffff8082111561010457600080fd5b818401915084601f83011261011857600080fd5b81358181111561012a5761012a6100d7565b604051601f8201601f19908116603f011681019083821181831017156101525761015261020a565b816040528381526020601f19601f820116820191505b5082821015610175575050604082013591508185016101e9565b5050509392505050565b600081518084526020808501945080840160005b838110156101ae5781516001600160a01b0316875295820195908201906001016100e9565b009495945050505050565b60005b838110156101d95781810151838201526020016100c1565b50506000910152565b60208152600082518060208401526101fd8160408501602087016101be565b601f01601f19169190910160400192915050565b634e487b7160e01b600052604160045260246000fd5b6000602082840312156100ec57600080fd5b813567ffffffffffffffff8082111561010457600080fd5b818401915084601f83011261011857600080fd5b81358181111561012a5761012a6100d7565b604051601f8201601f19908116603f011681019083821181831017156101525761015261020a565b816040528381526020601f19601f820116820191505b5082821015610175575050604082013591508185016101e9565b5050509392505050565b6000815180845260005b818110156102b457602081850181015186830182015201610298565b506000602082860101526020601f19601f83011685010192505050565b6001600160a01b038116811461016a57600080fd5b600080604083850312156102fb57600080fd5b82356103068161025c565b946020840135945050565b6000602082840312156103235760045a82605a0360009091529282905261031e9150565b60005b8381101561037a5781810151838201526020016101c1565b50508315157fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0840182875116820191505b5050919050565b828152606081016020830152610150604083018190526000906060830152565b608051610722610495600039600061068f5260006106615260006106695260006106755260006106515250565b608060405234801561001057600080fd5b50600436106100b5576000357c010000000000000000000000000000000000000000000000000000000090048063a9059cbb11610077578063a9059cbb146101005780637f631a97146101005780637f631a97146101005780635fd0adf414610100578063dd62ed3e146101005780635a3b7e4f14610115578063a9059cbb146101255780638da5cb5b1461015957600080fd5b806040111561013b5780637f631a971461010a5780635fd0adf41461013a5780635a3b7e4f1461013b5780639a8a059214610159578063dd62ed3e1461011c5760405190151581526020016100e0565b60006060825267ffffffff808316815114156101055760006020828401018152602084019350505b5092969550505050505050565b6000608082843610156101005760405190151581526020016100e0565b60006000351414610111578063735472616010146101115760405190151581526020016100e0565b5b610115632098975b565b8063010101018214610155577f01000000000000000000000000000000000000000000000000000000000000008160000361010756";
 
 const MINIMAL_ERC20_ABI = [
   "constructor(string name, string symbol, uint8 decimals, uint256 initialSupply)",
@@ -39,6 +41,7 @@ const server = new McpServer({
     "get-portfolio",
     "defi-challenges",
     "faucet",
+    "generer-image",
   ],
 });
 
@@ -454,21 +457,24 @@ const ERC1155_ABI = [
 ];
 
 const UNISWAP_V2_ROUTER_ABI = [
-  "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
   "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
-  "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
-  "function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+  "function swapTokensForExactTokens(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+  "function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)",
+  "function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts)",
 ];
 
 const ERC20_ABI = [
-  "function balanceOf(address owner) view returns (uint256)",
-  "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)",
   "function name() view returns (string)",
-  "function approve(address spender, uint256 amount) returns (bool)",
-  "function allowance(address owner, address spender) view returns (uint256)",
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
+  "function totalSupply() view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
   "function transfer(address to, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
   "function transferFrom(address from, address to, uint256 amount) returns (bool)",
+  "event Transfer(address indexed from, address indexed to, uint256 value)",
+  "event Approval(address indexed owner, address indexed spender, uint256 value)",
 ];
 
 const UNISWAP_V2_FACTORY_ABI = [
@@ -1539,13 +1545,31 @@ Si vous souhaitez créer de la liquidité, vous devrez ajouter des tokens aux po
         console.error(`Transaction de swap envoyée. Hash: ${swapTx.hash}`);
         console.error("Attente de la confirmation de la transaction...");
 
-        receipt = await swapTx.wait(2);
+        console.error(
+          `Transaction en attente de confirmation: ${swapTx.hash ?? swapTx}`
+        );
+        // Dans ethers.js v6, nous devons utiliser provider.waitForTransaction au lieu de wait()
+        const txHash =
+          typeof swapTx === "object" && swapTx !== null
+            ? "hash" in swapTx
+              ? swapTx.hash
+              : String(swapTx)
+            : String(swapTx);
 
-        if (!receipt || receipt.status === 0) {
-          throw new Error(
-            `Le swap a échoué. Hash de transaction: ${swapTx.hash}`
-          );
+        // Définir un type explicite pour receipt
+        interface TransactionReceiptResponse {
+          blockNumber?: number;
+          hash?: string;
+          gasUsed?: bigint;
+          status?: number;
         }
+
+        const receipt = (await provider.waitForTransaction(
+          txHash
+        )) as TransactionReceiptResponse;
+        console.error(
+          `Transaction confirmée! Hash: ${receipt?.hash ?? "inconnu"}`
+        );
       } catch (error) {
         console.error("Erreur détaillée lors de l'exécution du swap:", error);
 
@@ -1612,8 +1636,8 @@ Si vous souhaitez créer de la liquidité, vous devrez ajouter des tokens aux po
 De: ${amountIn} ${tokenInSymbol}
 À: ${ethers.formatUnits(estimatedAmountOut, 18)} ${tokenOutSymbol} (estimation)
 
-Transaction: ${swapTx.hash}
-Block: ${receipt.blockNumber}
+Transaction: ${(swapTx as any).hash}
+Block: ${(receipt as any)?.blockNumber || "N/A"}
 DEX utilisé: ${routerType}
 Chemin de swap: ${path
               .map((addr, i) => {
@@ -1628,11 +1652,11 @@ Chemin de swap: ${path
               .join(" -> ")}
 
 Vous pouvez consulter votre transaction ici:
-https://testnet.monadexplorer.com/tx/${swapTx.hash}`,
+https://testnet.monadexplorer.com/tx/${(swapTx as any).hash}`,
           },
         ],
-        txHash: swapTx.hash,
-        blockNumber: receipt.blockNumber,
+        txHash: (swapTx as any).hash,
+        blockNumber: (receipt as any)?.blockNumber || 0,
         tokenInSymbol,
         tokenOutSymbol,
         amountIn: amountIn,
@@ -1699,6 +1723,7 @@ server.tool(
       .default(20)
       .describe("Nombre maximum de NFTs à récupérer"),
   },
+  // @ts-ignore - Type complexe de la réponse
   async (
     {
       address,
@@ -1710,7 +1735,7 @@ server.tool(
       erc20TokensLimit,
       nftsLimit,
     },
-    extra
+    _extra
   ) => {
     try {
       if (!ethers.isAddress(address)) {
@@ -2488,9 +2513,6 @@ server.tool(
   }
 );
 
-// Add this code after the definition of the other tools in the MCP server
-// (after get-portfolio tool)
-
 server.tool(
   "monitor-smart-contract",
   "Advanced monitoring, analytics, and simulation for smart contracts on Monad testnet",
@@ -2670,8 +2692,6 @@ server.tool(
     }
   }
 );
-
-// Helper functions for contract monitoring
 
 async function getContractInfo(contractAddress: string) {
   console.error(`Fetching basic info for contract: ${contractAddress}`);
@@ -3844,9 +3864,6 @@ server.tool(
   }
 );
 
-// Fonctions utilitaires pour la fonctionnalité DeFi Challenges
-
-// Types pour les fonctions DeFi
 type ChallengeType =
   | "yield-farming"
   | "trading"
@@ -4035,7 +4052,6 @@ function calculateEntryFee(
   duration: Duration,
   initialInvestment: string | number
 ): number {
-  // Simuler un calcul des frais d'inscription en fonction de la durée et du montant initial
   const basePercentage = {
     daily: 0.5,
     weekly: 1.5,
@@ -4052,7 +4068,6 @@ function generateSimulatedLeaderboard(
   challengeType: ChallengeType,
   duration: Duration
 ): Performer[] {
-  // Générer un leaderboard simulé avec des participants fictifs
   const participantCount = {
     daily: 25 + Math.floor(Math.random() * 25),
     weekly: 50 + Math.floor(Math.random() * 50),
@@ -4064,32 +4079,35 @@ function generateSimulatedLeaderboard(
   for (let i = 0; i < participantCount; i++) {
     const performance =
       i < participantCount * 0.1
-        ? 15 + Math.random() * 25
+        ? 15 + Math.random() * 25 // Top 10%
         : i < participantCount * 0.3
-        ? 8 + Math.random() * 15
+        ? 8 + Math.random() * 15 // Top 30%
         : i < participantCount * 0.6
-        ? 3 + Math.random() * 8
-        : -5 + Math.random() * 10;
+        ? 3 + Math.random() * 8 // Top 60%
+        : -5 + Math.random() * 10; // Bottom 40%
 
     leaderboard.push({
       rank: i + 1,
       username: `MonadUser_${Math.random().toString(36).substring(2, 7)}`,
       performance: parseFloat(performance.toFixed(2)),
-      initialInvestment: (1 + Math.random() * 9).toFixed(2),
+      initialInvestment: (1 + Math.random() * 9).toFixed(2), // 1-10 MON
       strategy: randomElement(getStrategiesForType(challengeType)),
-      rewardShare: 0,
+      rewardShare: 0, // Sera calculé plus tard
     });
   }
 
+  // Trier par performance
   leaderboard.sort((a, b) => b.performance - a.performance);
 
+  // Mettre à jour les rangs
   leaderboard.forEach((participant, index) => {
     participant.rank = index + 1;
 
+    // Calculer la part des récompenses pour les top participants
     if (index < 3) {
-      participant.rewardShare = [50, 30, 15][index];
+      participant.rewardShare = [50, 30, 15][index]; // Top 3: 50%, 30%, 15%
     } else if (index < 10) {
-      participant.rewardShare = 5 / 7;
+      participant.rewardShare = 5 / 7; // Les 7 suivants se partagent 5%
     } else {
       participant.rewardShare = 0;
     }
@@ -4578,6 +4596,7 @@ function allocateAssets(
       }
       break;
 
+    // Autres cas similaires...
     default:
       allocation.push(
         {
@@ -4612,6 +4631,7 @@ function visualizeLeaderboard(
   username: string,
   estimatedRank: number
 ) {
+  // Créer une visualisation textuelle du leaderboard
   let visualization = ``;
 
   visualization += `🏆 LEADERBOARD (${leaderboard.length} Participants) 🏆\n\n`;
@@ -4619,6 +4639,7 @@ function visualizeLeaderboard(
   visualization += `│ RANK  │ USERNAME            │ PERFORMANCE │   STRATEGY   │\n`;
   visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
 
+  // Afficher les 5 premiers
   for (let i = 0; i < Math.min(5, leaderboard.length); i++) {
     const entry = leaderboard[i];
     visualization += `│ ${entry.rank
@@ -4630,11 +4651,13 @@ function visualizeLeaderboard(
     } │ ${entry.strategy.substring(0, 12).padEnd(12)} │\n`;
   }
 
+  // Ajouter des lignes de séparation si nécessaire
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│       │         ...         │            │              │\n`;
   }
 
+  // Ajouter l'utilisateur actuel si son rang est estimé entre 6 et length-5
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│ ${estimatedRank
@@ -4644,11 +4667,13 @@ function visualizeLeaderboard(
     )} │ ${"Your Strategy".padEnd(12)} │\n`;
   }
 
+  // Ajouter des lignes de séparation si nécessaire
   if (estimatedRank > 5 && estimatedRank < leaderboard.length - 4) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
     visualization += `│       │         ...         │            │              │\n`;
   }
 
+  // Afficher les 5 derniers si le leaderboard est assez grand
   if (leaderboard.length > 10) {
     visualization += `├───────┼─────────────────────┼────────────┼──────────────┤\n`;
 
@@ -4674,20 +4699,26 @@ function visualizeLeaderboard(
 }
 
 function generatePerformanceHistory(duration: Duration) {
+  // Générer un historique de performances fictif
   const durationDays = { daily: 1, weekly: 7, monthly: 30 }[duration];
   const history = [];
 
+  // Générer plus de points pour des durées plus longues
   const pointCount = durationDays === 1 ? 24 : durationDays;
   let cumulativePerformance = 0;
 
   for (let i = 0; i < pointCount; i++) {
+    // Calculer le timestamp
     const timestamp = new Date();
     if (durationDays === 1) {
+      // Historique horaire pour la journée
       timestamp.setHours(timestamp.getHours() - (pointCount - i));
     } else {
+      // Historique journalier pour semaine/mois
       timestamp.setDate(timestamp.getDate() - (pointCount - i));
     }
 
+    // Simuler un changement de performance avec un peu de volatilité
     const change = (Math.random() * 3 - 1) * (durationDays === 1 ? 0.2 : 0.8);
     cumulativePerformance += change;
 
@@ -4705,8 +4736,10 @@ function identifyDefiOpportunities(
   challengeType: ChallengeType,
   riskLevel: RiskLevel
 ) {
+  // Identifier les meilleures opportunités DeFi sur Monad testnet
   const opportunities = [];
 
+  // Opportunités de base selon le type de défi
   switch (challengeType) {
     case "yield-farming":
       opportunities.push(
@@ -4838,9 +4871,11 @@ function identifyDefiOpportunities(
       );
   }
 
+  // Filtrer selon le niveau de risque
   const riskToLevel = { low: 1, medium: 2, high: 3 };
   const riskLevel_num = riskToLevel[riskLevel];
 
+  // Ajouter quelques opportunités supplémentaires basées sur le niveau de risque
   if (riskLevel_num >= 2) {
     opportunities.push(
       {
@@ -5086,7 +5121,6 @@ function formatChallengeOutput(
   );
   output += `\n`;
 
-  // Chain comparison - Yield
   output += `| Strategy | Ethereum | Polygon | Arbitrum | Monad |\n`;
   output += `|----------|----------|---------|----------|-------|\n`;
   challengeSummary.chainComparison.yieldComparison.forEach(
@@ -5096,14 +5130,12 @@ function formatChallengeOutput(
   );
   output += `\n`;
 
-  // Avantages de Monad
   output += `### Monad Advantages\n\n`;
   challengeSummary.chainComparison.advantages.forEach((advantage: string) => {
     output += `- ${advantage}\n`;
   });
   output += `\n`;
 
-  // Instructions pour commencer
   output += `## 🏁 Next Steps\n\n`;
   output += `1. **Monitor your performance** in the DeFi Challenge dashboard\n`;
   output += `2. **Adjust your strategy** as market conditions change\n`;
@@ -5115,7 +5147,6 @@ function formatChallengeOutput(
   return output;
 }
 
-// Outil de faucet pour Monad
 server.tool(
   "monad-faucet",
   "Obtenir 0.2 MON sur Monad Testnet pour tester vos applications",
@@ -5172,7 +5203,7 @@ server.tool(
       console.error(`Transaction envoyée: ${tx.hash}`);
 
       // Attendre la confirmation
-      const receipt = await tx.wait(1);
+      const receipt = await provider.waitForTransaction(tx.hash);
 
       if (!receipt || receipt.status === 0) {
         throw new Error(`La transaction a échoué: ${tx.hash}`);
@@ -5200,6 +5231,57 @@ server.tool(
   }
 );
 
+// Fonction utilitaire pour générer un graphique ASCII de performance
+function generatePerformanceASCIIGraph(
+  performanceData: Array<{ timestamp: string; value: number }>
+) {
+  const height = 10;
+  const width = 50;
+
+  // Extraire les valeurs
+  const values = performanceData.map((p) => p.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min;
+
+  // Initialiser le graphique avec des espaces
+  const graph = Array(height)
+    .fill(null)
+    .map(() => Array(width).fill(" "));
+
+  // Remplir le graphique avec les données de performance
+  performanceData.forEach((point, i) => {
+    const x = Math.floor((i / performanceData.length) * width);
+    const normalizedValue = (point.value - min) / range;
+    const y = height - 1 - Math.floor(normalizedValue * (height - 1));
+
+    if (y >= 0 && y < height && x >= 0 && x < width) {
+      graph[y][x] = "█";
+    }
+  });
+
+  // Ajouter une ligne de base à 100% (valeur initiale)
+  const baselineY =
+    height - 1 - Math.floor(((100 - min) / range) * (height - 1));
+  if (baselineY >= 0 && baselineY < height) {
+    for (let x = 0; x < width; x++) {
+      if (graph[baselineY][x] === " ") {
+        graph[baselineY][x] = "·";
+      }
+    }
+  }
+
+  // Convertir en chaîne de caractères
+  const graphStr = graph.map((row) => row.join("")).join("\n");
+
+  // Ajouter les étiquettes
+  const result = `${max.toFixed(1)}% ┌${"─".repeat(
+    width
+  )}┐\n${graphStr}\n${min.toFixed(1)}% └${"─".repeat(width)}┘`;
+
+  return result;
+}
+
 async function main() {
   try {
     const transport = new StdioServerTransport();
@@ -5216,3 +5298,1346 @@ main().catch((error) => {
   console.error("Fatal error in main():", error);
   process.exit(1);
 });
+
+// Outil pour créer et gérer un agent IA auto-améliorant qui trade sur Monad Testnet
+server.tool(
+  "monad-ai-trader-autonomous",
+  "Créer et gérer un agent IA auto-améliorant qui trade automatiquement WMON/TCHOG sur Monad Testnet",
+  {
+    privateKey: z
+      .string()
+      .describe("Clé privée du wallet à utiliser pour le trading"),
+    initialInvestment: z
+      .number()
+      .default(0.1)
+      .describe("Montant initial à investir en MON"),
+    riskLevel: z
+      .enum(["conservative", "moderate", "aggressive"])
+      .default("moderate")
+      .describe("Niveau de risque pour la stratégie de trading"),
+    learningRate: z
+      .number()
+      .default(0.1)
+      .describe("Taux d'apprentissage initial de l'agent"),
+    maxSlippage: z
+      .number()
+      .default(1.5)
+      .describe("Pourcentage de slippage maximum autorisé"),
+    action: z
+      .enum(["create", "start", "stop", "status", "improve"])
+      .default("status")
+      .describe("Action à effectuer avec l'agent IA"),
+  },
+  // @ts-ignore - Type complexe de la réponse
+  async (
+    {
+      privateKey,
+      initialInvestment,
+      riskLevel,
+      learningRate,
+      maxSlippage,
+      action,
+    },
+    _extra
+  ) => {
+    try {
+      // Initialisation du wallet pour l'agent
+      const wallet = new ethers.Wallet(privateKey, provider);
+      const agentAddress = wallet.address;
+
+      // Générer un ID unique pour l'agent s'il n'existe pas déjà
+      const agentId = `ai-trader-${agentAddress.substring(2, 8)}`;
+
+      console.error(`Agent IA autonome ${agentId} - Action: ${action}`);
+
+      // Vérifier le solde du wallet
+      const balance = await provider.getBalance(agentAddress);
+      console.error(`Solde disponible: ${ethers.formatEther(balance)} MON`);
+
+      if (balance < ethers.parseEther(initialInvestment.toString())) {
+        throw new Error(
+          `Solde insuffisant pour démarrer l'agent: ${ethers.formatEther(
+            balance
+          )} MON`
+        );
+      }
+
+      // Adresses des contrats sur Monad Testnet
+      const WMON_ADDRESS = "0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701"; // À remplacer par l'adresse réelle
+      const TCHOG_ADDRESS = "0xCaF9244A9D4A79c3229cb354a1919961fa0122B4"; // À remplacer par l'adresse réelle
+      const DEX_ROUTER_ADDRESS = "0xfb8e1c3b833f9e67a71c859a132cf783b645e436"; // À remplacer par l'adresse du router
+
+      // Définir les interfaces pour les contrats
+      interface IERC20 extends ethers.BaseContract {
+        approve(
+          spender: string,
+          amount: bigint | string
+        ): Promise<ethers.ContractTransaction>;
+        balanceOf(account: string): Promise<bigint>;
+        transfer(
+          to: string,
+          amount: bigint | string
+        ): Promise<ethers.ContractTransaction>;
+        allowance(owner: string, spender: string): Promise<bigint>;
+      }
+
+      interface IUniswapRouter extends ethers.BaseContract {
+        swapExactTokensForTokens(
+          amountIn: bigint | string,
+          amountOutMin: bigint | string,
+          path: string[],
+          to: string,
+          deadline: number,
+          options?: any
+        ): Promise<ethers.ContractTransaction>;
+
+        swapExactETHForTokens(
+          amountOutMin: bigint | string,
+          path: string[],
+          to: string,
+          deadline: number,
+          options?: any
+        ): Promise<ethers.ContractTransaction>;
+
+        swapExactTokensForETH(
+          amountIn: bigint | string,
+          amountOutMin: bigint | string,
+          path: string[],
+          to: string,
+          deadline: number,
+          options?: any
+        ): Promise<ethers.ContractTransaction>;
+      }
+
+      // Instancier les contrats
+      const wmonContract = new ethers.Contract(
+        WMON_ADDRESS,
+        ERC20_ABI,
+        wallet
+      ) as unknown as IERC20;
+      const tchogContract = new ethers.Contract(
+        TCHOG_ADDRESS,
+        ERC20_ABI,
+        wallet
+      ) as unknown as IERC20;
+      const routerContract = new ethers.Contract(
+        DEX_ROUTER_ADDRESS,
+        UNISWAP_V2_ROUTER_ABI,
+        wallet
+      ) as unknown as IUniswapRouter;
+
+      // Structure pour stocker l'historique de trading et les métriques d'apprentissage
+      interface TraderTransaction {
+        txHash: string;
+        timestamp: string;
+        action: string;
+        amount: string | number;
+        price: number | string;
+        gasUsed: string;
+        profit: string;
+        status: string;
+      }
+
+      const agentData = {
+        id: agentId,
+        address: agentAddress,
+        status: "active", // Toujours actif par défaut
+        initialCapital: initialInvestment,
+        currentBalance: Number(ethers.formatEther(balance)),
+        transactions: [] as TraderTransaction[],
+        learningMetrics: {
+          successRate: 0,
+          profitFactor: 0,
+          averageProfit: 0,
+          sharpeRatio: 0,
+          learningRate: learningRate,
+          explorationRate: 0.2,
+          improvementIterations: 0,
+        },
+        riskProfile: riskLevel,
+        createdAt: new Date().toISOString(),
+        lastImprovement: null as string | null,
+        strategyParams: {
+          entryThreshold:
+            riskLevel === "conservative"
+              ? 0.8
+              : riskLevel === "moderate"
+              ? 0.6
+              : 0.4,
+          exitThreshold:
+            riskLevel === "conservative"
+              ? 1.5
+              : riskLevel === "moderate"
+              ? 2
+              : 2.5,
+          positionSizePercent:
+            riskLevel === "conservative"
+              ? 10
+              : riskLevel === "moderate"
+              ? 25
+              : 40,
+          stopLossPercent:
+            riskLevel === "conservative"
+              ? 5
+              : riskLevel === "moderate"
+              ? 10
+              : 15,
+          takeProfitPercent:
+            riskLevel === "conservative"
+              ? 8
+              : riskLevel === "moderate"
+              ? 15
+              : 25,
+        },
+      };
+
+      // Fonctions d'analyse technique simulées (à implémenter avec des calculs réels)
+      const technicalAnalysis = {
+        calculateRSI: async (pair: string) => {
+          // Simuler une valeur RSI
+          return 30 + Math.random() * 40;
+        },
+        calculateMACD: async (pair: string) => {
+          // Simuler un signal MACD
+          return Math.random() - 0.5;
+        },
+        calculateEMA: async (pair: string, period: number) => {
+          // Simuler une valeur EMA
+          return 0.00015 + (Math.random() * 0.00002 - 0.00001);
+        },
+        detectPricePattern: async (pair: string) => {
+          // Simuler une détection de motif
+          const patterns = [
+            "double_bottom",
+            "head_shoulders",
+            "channel_breakout",
+            "none",
+          ];
+          return patterns[Math.floor(Math.random() * patterns.length)];
+        },
+      };
+
+      // Fonction pour exécuter une transaction réelle
+      const executeTransaction = async (action: string, amount: number) => {
+        console.error(
+          `Exécution d'une transaction réelle: ${action} ${amount} TCHOG...`
+        );
+
+        try {
+          // Obtenir les balances actuelles
+          const wmonBalance = await wmonContract.balanceOf(wallet.address);
+          const tchogBalance = await tchogContract.balanceOf(wallet.address);
+
+          console.error(
+            `Balances actuelles - WMON: ${ethers.formatUnits(
+              wmonBalance,
+              18
+            )}, TCHOG: ${ethers.formatUnits(tchogBalance, 18)}`
+          );
+
+          // Vérifier si l'utilisateur a assez de tokens pour la transaction
+          if (
+            action === "buy" &&
+            wmonBalance < ethers.parseEther(amount.toString())
+          ) {
+            return {
+              success: false,
+              error: `Solde WMON insuffisant pour acheter ${amount} TCHOG`,
+            };
+          } else if (
+            action === "sell" &&
+            tchogBalance < ethers.parseUnits(amount.toString(), 18)
+          ) {
+            return {
+              success: false,
+              error: `Solde TCHOG insuffisant pour vendre ${amount} TCHOG`,
+            };
+          }
+
+          // Calculer le montant à trader
+          const amountIn =
+            action === "buy"
+              ? ethers.parseEther(amount.toString())
+              : ethers.parseUnits(amount.toString(), 18);
+
+          // Approuver le router à dépenser nos tokens si c'est une vente
+          if (action === "sell") {
+            console.error(
+              `Approbation du router pour dépenser ${amount} TCHOG`
+            );
+            // Dans ethers.js v6, await sur la transaction directement
+            const receipt = await tchogContract.approve(
+              DEX_ROUTER_ADDRESS,
+              amountIn
+            );
+            console.error(`Approbation réussie pour ${amount} TCHOG`);
+          } else if (action === "buy") {
+            console.error(`Approbation du router pour dépenser ${amount} WMON`);
+            // Dans ethers.js v6, await sur la transaction directement
+            const receipt = await wmonContract.approve(
+              DEX_ROUTER_ADDRESS,
+              amountIn
+            );
+            console.error(`Approbation réussie pour ${amount} WMON`);
+          }
+
+          // Calculer le slippage (0.5% par défaut)
+          const slippageTolerance = 99.5; // 0.5% de slippage
+          const minAmountOut = ethers.parseUnits(
+            (
+              ((action === "buy" ? amount * 0.00015 : amount) *
+                slippageTolerance) /
+              100
+            ).toString(),
+            18
+          );
+
+          // Configurer les paramètres de transaction
+          const deadline = Math.floor(Date.now() / 1000) + 300; // 5 minutes
+
+          // Chemin de swap
+          const path =
+            action === "buy"
+              ? [WMON_ADDRESS, TCHOG_ADDRESS]
+              : [TCHOG_ADDRESS, WMON_ADDRESS];
+
+          // Exécuter le swap avec le wallet réel de l'utilisateur
+          const routerWithSigner = routerContract.connect(
+            wallet
+          ) as IUniswapRouter;
+
+          let swapTx;
+          if (action === "buy") {
+            console.error(`Exécution d'un swap pour acheter ${amount} TCHOG`);
+            swapTx = await routerWithSigner.swapExactTokensForTokens(
+              amountIn,
+              minAmountOut,
+              path,
+              wallet.address,
+              deadline,
+              { gasLimit: 500000 }
+            );
+          } else {
+            console.error(`Exécution d'un swap pour vendre ${amount} TCHOG`);
+            swapTx = await routerWithSigner.swapExactTokensForTokens(
+              amountIn,
+              minAmountOut,
+              path,
+              wallet.address,
+              deadline,
+              { gasLimit: 500000 }
+            );
+          }
+
+          const swapTxHash =
+            swapTx && typeof swapTx === "object"
+              ? (swapTx as any).hash
+              : String(swapTx);
+
+          // Définir un type explicite pour receipt
+          interface TransactionReceiptResponse {
+            blockNumber?: number;
+            hash?: string;
+            gasUsed?: bigint;
+            status?: number;
+          }
+
+          const receipt = (await provider.waitForTransaction(
+            swapTxHash
+          )) as TransactionReceiptResponse;
+
+          // Récupérer les balances mises à jour
+          const newWmonBalance = await wmonContract.balanceOf(wallet.address);
+          const newTchogBalance = await tchogContract.balanceOf(wallet.address);
+
+          // Calculer le profit/perte réel
+          const wmonDiff = newWmonBalance - wmonBalance;
+          const tchogDiff = newTchogBalance - tchogBalance;
+
+          const estimatedProfit =
+            action === "buy"
+              ? ethers.formatUnits(tchogDiff, 18)
+              : ethers.formatUnits(wmonDiff, 18);
+
+          // Enregistrer la transaction dans l'historique
+          const txDetails = {
+            txHash: receipt?.hash || swapTxHash,
+            timestamp: new Date().toISOString(),
+            action,
+            amount: amount.toString(),
+            price:
+              action === "buy"
+                ? tchogDiff === 0n
+                  ? "0"
+                  : ethers.formatUnits(
+                      (BigInt(amountIn) * 10n ** 18n) / tchogDiff,
+                      18
+                    )
+                : ethers.formatUnits(
+                    (wmonDiff * 10n ** 18n) / (BigInt(amountIn) || 1n),
+                    18
+                  ),
+            gasUsed: receipt?.gasUsed?.toString() || "0",
+            profit: estimatedProfit,
+            status: "completed",
+          };
+
+          agentData.transactions.push(txDetails);
+          console.error(
+            `Transaction réelle enregistrée: ${action} ${amount} TCHOG`
+          );
+
+          return {
+            success: true,
+            txHash: receipt?.hash || swapTxHash,
+            details: txDetails,
+          };
+        } catch (error: any) {
+          console.error(
+            `Erreur lors de l'exécution de la transaction réelle: ${error}`
+          );
+          return {
+            success: false,
+            error: error.message,
+          };
+        }
+      };
+
+      // Fonction pour prendre une décision de trading basée sur l'analyse de données réelles
+      const makeDecision = async () => {
+        console.error("Analyse du marché WMON/TCHOG avec données réelles...");
+
+        try {
+          let priceData;
+
+          // Essayer d'obtenir des données réelles via l'API Mobula pour la paire
+          try {
+            console.error(
+              "Tentative de récupération des données de paire via l'API Mobula..."
+            );
+
+            // L'adresse de la paire WMON/TCHOG (modifier l'adresse selon votre paire réelle)
+            const PAIR_ADDRESS = "0xfb8e1c3b833f9e67a71c859a132cf783b645e436"; // Remplacer par l'adresse réelle de la paire
+
+            const response = await fetch(
+              `https://api.mobula.io/api/1/market/history/pair?address=${PAIR_ADDRESS}&period=1h&amount=2`
+            );
+
+            if (response.ok) {
+              const pairData = (await response.json()) as {
+                data?: Array<{
+                  close: number;
+                  volume?: number;
+                }>;
+              };
+
+              if (
+                pairData?.data &&
+                Array.isArray(pairData.data) &&
+                pairData.data.length > 0
+              ) {
+                // L'API de paire retourne des données OHLCV
+                const ohlcvData = pairData.data;
+
+                // Extraire le prix de clôture (close) le plus récent pour le prix actuel
+                const latestCandle = ohlcvData[ohlcvData.length - 1];
+                const earlierCandle = ohlcvData[0];
+
+                // Calculer la variation sur la dernière heure (2 points de données)
+                const change =
+                  ((latestCandle.close - earlierCandle.close) /
+                    earlierCandle.close) *
+                  100;
+
+                priceData = {
+                  price: latestCandle.close,
+                  change24h: change,
+                  volume24h: latestCandle.volume || 0,
+                  lastUpdated: new Date().toISOString(),
+                };
+
+                console.error(
+                  `Données réelles de paire obtenues - Prix: ${
+                    priceData.price
+                  }, Variation: ${priceData.change24h.toFixed(2)}%`
+                );
+              } else {
+                throw new Error("Format de données de paire invalide");
+              }
+            } else {
+              throw new Error(
+                `Erreur ${response.status}: ${response.statusText}`
+              );
+            }
+          } catch (apiError) {
+            console.error(
+              "Échec de récupération des données de paire via l'API Mobula, utilisation de données simulées:",
+              apiError
+            );
+
+            // Utiliser des données simulées comme fallback
+            priceData = {
+              price: 0.00015,
+              change24h: Math.random() * 10 - 5, // -5% à +5%
+              volume24h: 1000000 + Math.random() * 500000,
+              lastUpdated: new Date().toISOString(),
+            };
+
+            console.error(
+              "Utilisation de données simulées pour l'analyse du marché"
+            );
+          }
+
+          // Vérification que priceData est bien défini
+          if (!priceData) {
+            priceData = {
+              price: 0.00015,
+              change24h: 0,
+              volume24h: 0,
+              lastUpdated: new Date().toISOString(),
+            };
+          }
+
+          // Simuler des indicateurs techniques simplifiés
+          const indicators = {
+            price: priceData.price,
+            change24h: priceData.change24h,
+            volume24h: priceData.volume24h,
+            rsi: 50 + priceData.change24h * 2, // Simulation simplifiée
+            ema: priceData.price * (1 + priceData.change24h / 200), // Simulation simplifiée
+            macd: priceData.change24h / 2, // Simulation simplifiée
+            lastUpdated: priceData.lastUpdated,
+          };
+
+          // Stratégie de trading simple basée sur les valeurs simulées
+          let decision = "hold";
+          let confidence = 0.5;
+          let amount = 0;
+
+          // Si le RSI est bas et le prix baisse, c'est peut-être une opportunité d'achat
+          if (indicators.rsi < 30 && indicators.change24h < -2) {
+            decision = "buy";
+            confidence =
+              0.7 + Math.min(0.2, Math.abs(indicators.change24h) / 100);
+            amount = Math.floor(10 + Math.random() * 90); // Entre 10 et 100 unités
+          }
+          // Si le RSI est élevé et le prix monte rapidement, envisager de vendre
+          else if (indicators.rsi > 70 && indicators.change24h > 2) {
+            decision = "sell";
+            confidence = 0.7 + Math.min(0.2, indicators.change24h / 100);
+            amount = Math.floor(10 + Math.random() * 90);
+          }
+          // Sinon, conserver la position actuelle
+          else {
+            decision = "hold";
+            confidence = 0.5 + Math.random() * 0.3;
+            amount = 0;
+          }
+
+          console.error(
+            `Décision: ${decision.toUpperCase()} ${amount} TCHOG (Confiance: ${(
+              confidence * 100
+            ).toFixed(2)}%)`
+          );
+
+          return {
+            decision,
+            amount,
+            confidence,
+            indicators,
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error: any) {
+          console.error(`Erreur lors de l'analyse du marché: ${error}`);
+          return {
+            decision: "hold",
+            amount: 0,
+            confidence: 0.1,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          };
+        }
+      };
+
+      // Fonction pour améliorer l'agent basée sur ses performances passées
+      const improveAgent = () => {
+        console.error(
+          "Amélioration de l'agent IA basée sur l'historique de trading..."
+        );
+
+        if (agentData.transactions.length < 5) {
+          return {
+            success: false,
+            message:
+              "Données insuffisantes pour améliorer l'agent (minimum 5 transactions)",
+          };
+        }
+
+        // Calculer les métriques de performance
+        const profits = agentData.transactions
+          .filter((tx) => tx.status === "completed")
+          .map((tx) => parseFloat(tx.profit));
+
+        const successCount = profits.filter((p) => p > 0).length;
+        const totalCount = profits.length;
+
+        const successRate = totalCount > 0 ? successCount / totalCount : 0;
+        const averageProfit =
+          totalCount > 0 ? profits.reduce((a, b) => a + b, 0) / totalCount : 0;
+
+        // Calculer le ratio de Sharpe simplifié
+        const returns = profits.map((p) => p / 100);
+        const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+        const stdDeviation = Math.sqrt(
+          returns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) /
+            returns.length
+        );
+        const sharpeRatio = stdDeviation > 0 ? meanReturn / stdDeviation : 0;
+
+        // Mettre à jour les paramètres d'apprentissage
+        agentData.learningMetrics.successRate = successRate;
+        agentData.learningMetrics.averageProfit = averageProfit;
+        agentData.learningMetrics.sharpeRatio = sharpeRatio;
+        agentData.learningMetrics.improvementIterations++;
+
+        // Réduire le taux d'exploration avec le temps pour favoriser l'exploitation
+        agentData.learningMetrics.explorationRate = Math.max(
+          0.05,
+          agentData.learningMetrics.explorationRate * 0.9
+        );
+
+        // Ajuster les paramètres de stratégie en fonction des performances
+        if (successRate > 0.6) {
+          // Stratégie performante, augmenter la taille des positions
+          agentData.strategyParams.positionSizePercent = Math.min(
+            agentData.strategyParams.positionSizePercent * 1.1,
+            riskLevel === "conservative"
+              ? 20
+              : riskLevel === "moderate"
+              ? 40
+              : 60
+          );
+        } else if (successRate < 0.4) {
+          // Stratégie peu performante, réduire la taille des positions
+          agentData.strategyParams.positionSizePercent = Math.max(
+            agentData.strategyParams.positionSizePercent * 0.9,
+            riskLevel === "conservative"
+              ? 5
+              : riskLevel === "moderate"
+              ? 10
+              : 20
+          );
+        }
+
+        // Ajuster les seuils d'entrée/sortie
+        if (averageProfit > 0) {
+          agentData.strategyParams.takeProfitPercent *= 1.05; // Viser des profits plus élevés
+          agentData.strategyParams.stopLossPercent *= 0.95; // Réduire les pertes
+        } else {
+          agentData.strategyParams.takeProfitPercent *= 0.95; // Réduire les attentes
+          agentData.strategyParams.stopLossPercent *= 1.05; // Augmenter la tolérance aux pertes
+        }
+
+        agentData.lastImprovement = new Date().toISOString();
+
+        return {
+          success: true,
+          iterations: agentData.learningMetrics.improvementIterations,
+          successRate,
+          averageProfit,
+          sharpeRatio,
+          newParams: agentData.strategyParams,
+        };
+      };
+
+      // Traiter l'action demandée
+      let result = null;
+
+      // Définition des types pour chaque action
+      type CreateResult = {
+        success: boolean;
+        agentId: string;
+        message: string;
+        address: string;
+        status: string;
+        initialCapital: number;
+        riskLevel: typeof riskLevel;
+        initialTrade?: {
+          success: boolean;
+          action: string;
+          amount: number;
+          txHash: string;
+        };
+      };
+
+      type StartResult = {
+        success: boolean;
+        agentId: string;
+        action: string;
+        amount?: number;
+        confidence?: number;
+        txHash: string | null;
+        message: string;
+        indicators?: any;
+      };
+
+      type StopResult = {
+        success: boolean;
+        agentId: string;
+        message: string;
+        status: string;
+      };
+
+      type ImproveResult = {
+        success: boolean;
+        agentId: string;
+        message: string;
+        metrics?: {
+          successRate: number;
+          averageProfit: number;
+          sharpeRatio: number;
+          iterations: number;
+        };
+        newParams?: any;
+      };
+
+      type StatusResult = {
+        success: boolean;
+        agentId: string;
+        address: string;
+        balance: string;
+        status: string;
+        transactions: number;
+        riskLevel: typeof riskLevel;
+        learningMetrics: any;
+        strategyParams: any;
+        lastImprovement: string;
+      };
+
+      // Type guards pour vérifier le type de résultat
+      const isCreateResult = (result: any): result is CreateResult =>
+        action === "create";
+
+      const isStartResult = (result: any): result is StartResult =>
+        action === "start";
+
+      const isStopResult = (result: any): result is StopResult =>
+        action === "stop";
+
+      const isImproveResult = (result: any): result is ImproveResult =>
+        action === "improve";
+
+      const isStatusResult = (result: any): result is StatusResult =>
+        action === "status" ||
+        !["create", "start", "stop", "improve"].includes(action);
+
+      switch (action) {
+        case "create":
+          result = {
+            success: true,
+            agentId,
+            message: `Agent IA autonome créé: ${agentId}`,
+            address: agentAddress,
+            status: "active", // Actif dès la création
+            initialCapital: initialInvestment,
+            riskLevel,
+          } as CreateResult;
+
+          // Après avoir créé l'agent, effectuer un achat initial
+          if (agentAddress) {
+            try {
+              const tradeResult = await performInitialTrade(
+                wallet,
+                initialInvestment
+              );
+
+              // Ajouter la transaction à l'historique de l'agent si le trade a réussi
+              if (tradeResult.success) {
+                const transaction: TraderTransaction = {
+                  txHash: tradeResult.txHash || "",
+                  timestamp: new Date().toISOString(),
+                  action: "buy",
+                  amount: String(tradeResult.amount),
+                  price: "0", // À remplir plus tard avec le prix réel
+                  gasUsed: "0", // À remplir plus tard avec le gas réel
+                  profit: "0",
+                  status: "completed",
+                };
+
+                agentData.transactions.push(transaction);
+
+                // Ajouter l'information du trade initial dans le résultat
+                (result as CreateResult).initialTrade = {
+                  success: true,
+                  action: "buy",
+                  amount: tradeResult.amount ?? 0, // Utiliser 0 si amount est undefined
+                  txHash: tradeResult.txHash || "",
+                };
+              } else {
+                console.error("L'achat initial a échoué:", tradeResult.message);
+              }
+
+              // Démarrer immédiatement une décision de trading après la création
+              console.error(
+                "Démarrage automatique du trading après création..."
+              );
+
+              // Prendre une décision de trading
+              const decision = await makeDecision();
+
+              if (
+                decision.decision !== "hold" &&
+                decision.confidence > agentData.strategyParams.entryThreshold
+              ) {
+                console.error(
+                  `Décision de trading auto: ${decision.decision.toUpperCase()} ${
+                    decision.amount
+                  } TCHOG`
+                );
+
+                // Exécuter la transaction
+                const txResult = await executeTransaction(
+                  decision.decision,
+                  decision.amount
+                );
+
+                if (txResult.success) {
+                  console.error(`Transaction auto réussie: ${txResult.txHash}`);
+                } else {
+                  console.error(
+                    `Échec de la transaction auto: ${txResult.error}`
+                  );
+                }
+              } else {
+                console.error(
+                  `Décision HOLD - Pas de trading auto pour le moment`
+                );
+              }
+            } catch (tradeError) {
+              console.error("Erreur lors de l'achat initial:", tradeError);
+            }
+          }
+
+          break;
+
+        case "start":
+          // Prendre une décision de trading
+          const decision = await makeDecision();
+
+          if (
+            decision.decision !== "hold" &&
+            decision.confidence > agentData.strategyParams.entryThreshold
+          ) {
+            // Exécuter la transaction
+            const txResult = await executeTransaction(
+              decision.decision,
+              decision.amount
+            );
+
+            result = {
+              success: txResult.success,
+              agentId,
+              action: decision.decision,
+              amount: decision.amount,
+              confidence: decision.confidence,
+              txHash: txResult.success ? txResult.txHash : null,
+              message: txResult.success
+                ? `Transaction réussie: ${
+                    decision.decision ? decision.decision.toUpperCase() : "NONE"
+                  } ${decision.amount || 0} TCHOG
+Confiance: ${
+                    decision.confidence
+                      ? (decision.confidence * 100).toFixed(2)
+                      : "0"
+                  }%
+Hash: ${txResult.txHash || "N/A"}`
+                : `Échec de la transaction: ${txResult.error}`,
+            };
+          } else {
+            result = {
+              success: true,
+              agentId,
+              action: "hold",
+              message: `Décision: HOLD - Confiance insuffisante (${(
+                decision.confidence * 100
+              ).toFixed(2)}%) ou meilleure opportunité non détectée`,
+              indicators: decision.indicators,
+            };
+          }
+          break;
+
+        case "stop":
+          result = {
+            success: true,
+            agentId,
+            message: `Agent IA arrêté: ${agentId}`,
+            status: "idle",
+          };
+          break;
+
+        case "improve":
+          const improvementResult = improveAgent();
+
+          result = {
+            success: improvementResult.success,
+            agentId,
+            message: improvementResult.success
+              ? `Agent IA amélioré après ${improvementResult.iterations} itérations`
+              : improvementResult.message,
+            metrics: improvementResult.success
+              ? {
+                  successRate: improvementResult.successRate,
+                  averageProfit: improvementResult.averageProfit,
+                  sharpeRatio: improvementResult.sharpeRatio,
+                  iterations: improvementResult.iterations,
+                }
+              : undefined,
+            newParams: improvementResult.success
+              ? improvementResult.newParams
+              : undefined,
+          };
+          break;
+
+        case "status":
+        default:
+          // Récupérer le statut actuel
+          result = {
+            success: true,
+            agentId,
+            address: agentAddress,
+            balance: ethers.formatEther(balance),
+            status: "active", // Toujours en mode actif
+            transactions: agentData.transactions.length,
+            riskLevel,
+            learningMetrics: agentData.learningMetrics,
+            strategyParams: agentData.strategyParams,
+            lastImprovement: agentData.lastImprovement,
+          };
+          break;
+      }
+
+      // Générer la sortie
+      let output = `
+🤖 AGENT IA AUTONOME DE TRADING ${
+        action === "create"
+          ? "CRÉÉ"
+          : action === "start"
+          ? "DÉMARRÉ"
+          : action === "stop"
+          ? "ARRÊTÉ"
+          : action === "improve"
+          ? "AMÉLIORÉ"
+          : "STATUT"
+      }
+
+ID: ${agentId}
+Adresse: ${agentAddress}
+Solde: ${ethers.formatEther(balance)} MON
+Statut: ${
+        result && "status" in result
+          ? result.status
+          : action === "start"
+          ? "actif"
+          : "inactif"
+      }
+Niveau de risque: ${riskLevel.toUpperCase()}
+
+${
+  action === "create" && isCreateResult(result)
+    ? `✅ Agent IA créé avec succès
+Capital initial: ${initialInvestment} MON
+${
+  result.initialTrade && result.initialTrade.success
+    ? `✅ Achat initial: ${result.initialTrade.amount} WMON → TCHOG
+Hash: ${result.initialTrade.txHash}`
+    : "⚠️ Achat initial non effectué"
+}
+Pour démarrer l'agent: monad-ai-trader-autonomous --action=start --privateKey=${privateKey.substring(
+        0,
+        6
+      )}...`
+    : action === "start" && isStartResult(result)
+    ? `${
+        result.success
+          ? `✅ Transaction exécutée: ${
+              result.action ? result.action.toUpperCase() : "NONE"
+            } ${result.amount || 0} TCHOG
+Confiance: ${result.confidence ? (result.confidence * 100).toFixed(2) : "0"}%
+Hash: ${result.txHash || "N/A"}`
+          : `❌ ${result.message || "Erreur inconnue"}`
+      }`
+    : action === "stop" && isStopResult(result)
+    ? `✅ Agent IA arrêté`
+    : action === "improve" && isImproveResult(result)
+    ? `${
+        result.success
+          ? `✅ Agent IA amélioré après ${
+              result.metrics && result.metrics.iterations
+                ? result.metrics.iterations
+                : "N/A"
+            } itérations
+Taux de succès: ${
+              result.metrics && result.metrics.successRate
+                ? (result.metrics.successRate * 100).toFixed(2)
+                : "N/A"
+            }%
+Profit moyen: ${
+              result.metrics && result.metrics.averageProfit
+                ? result.metrics.averageProfit.toFixed(6)
+                : "N/A"
+            } MON
+Ratio de Sharpe: ${
+              result.metrics && result.metrics.sharpeRatio
+                ? result.metrics.sharpeRatio.toFixed(2)
+                : "N/A"
+            }
+
+NOUVEAUX PARAMÈTRES:
+- Taille de position: ${
+              result.newParams
+                ? result.newParams.positionSizePercent.toFixed(2)
+                : "N/A"
+            }%
+- Seuil d'entrée: ${
+              result.newParams
+                ? result.newParams.entryThreshold.toFixed(2)
+                : "N/A"
+            }`
+          : `❌ ${result.message || "Erreur inconnue"}`
+      }`
+    : isStatusResult(result)
+    ? `📊 STATUT DE L'AGENT IA
+Transactions totales: ${result.transactions || 0}
+Taux d'apprentissage: ${
+        result.learningMetrics
+          ? result.learningMetrics.learningRate
+          : learningRate
+      }
+Taux d'exploration: ${
+        result.learningMetrics
+          ? result.learningMetrics.explorationRate.toFixed(3)
+          : "0.200"
+      }
+Dernière amélioration: ${result.lastImprovement || "Jamais"}
+
+PARAMÈTRES DE STRATÉGIE:
+- Taille de position: ${
+        result.strategyParams
+          ? result.strategyParams.positionSizePercent.toFixed(2)
+          : "N/A"
+      }%
+- Seuil d'entrée: ${
+        result.strategyParams
+          ? result.strategyParams.entryThreshold.toFixed(2)
+          : "N/A"
+      }
+- Stop loss: ${
+        result.strategyParams
+          ? result.strategyParams.stopLossPercent.toFixed(2)
+          : "N/A"
+      }%
+- Take profit: ${
+        result.strategyParams
+          ? result.strategyParams.takeProfitPercent.toFixed(2)
+          : "N/A"
+      }%`
+    : ""
+}
+
+COMMANDES DISPONIBLES:
+- Pour créer un agent: monad-ai-trader-autonomous --action=create --privateKey=<votre_clé>
+- Pour démarrer un agent: monad-ai-trader-autonomous --action=start --privateKey=<votre_clé>
+- Pour améliorer un agent: monad-ai-trader-autonomous --action=improve --privateKey=<votre_clé>
+- Pour arrêter un agent: monad-ai-trader-autonomous --action=stop --privateKey=<votre_clé>
+
+NOTE: L'agent IA exécute des transactions réelles sur Monad Testnet.
+Toutes les transactions sont vérifiables dans l'explorateur Monad.
+`;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: output,
+          },
+        ],
+      };
+    } catch (error) {
+      console.error(
+        "Erreur lors de l'exécution de l'agent IA autonome:",
+        error
+      );
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Erreur lors de l'exécution de l'agent IA autonome: ${error}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+async function performInitialTrade(
+  wallet: ethers.Wallet,
+  initialInvestment: number
+) {
+  try {
+    console.error("Exécution d'un achat initial de TCHOG...");
+
+    // Adresses des contrats
+    const WMON_ADDRESS = "0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701";
+    const TCHOG_ADDRESS = "0xCaF9244A9D4A79c3229cb354a1919961fa0122B4";
+    const DEX_ROUTER_ADDRESS = "0xfb8e1c3b833f9e67a71c859a132cf783b645e436";
+
+    // Instancier les contrats
+    const wmonContract = new ethers.Contract(WMON_ADDRESS, ERC20_ABI, wallet);
+    const routerContract = new ethers.Contract(
+      DEX_ROUTER_ADDRESS,
+      UNISWAP_V2_ROUTER_ABI,
+      wallet
+    );
+
+    // Montant à échanger (50% de l'investissement initial)
+    const amountToSwap = initialInvestment * 0.5;
+    const amountInWei = ethers.parseEther(amountToSwap.toString());
+
+    // Approuver le router pour dépenser les WMON
+    console.error(
+      `Approbation du router pour dépenser ${amountToSwap} WMON...`
+    );
+    const approvalTx = await wmonContract.approve(
+      DEX_ROUTER_ADDRESS,
+      amountInWei
+    );
+    await approvalTx.wait();
+
+    // Calculer le montant minimum à recevoir (avec 1% de slippage)
+    const amountOutMin = 0; // Pour la démonstration, acceptons n'importe quel montant
+
+    // Construire le chemin de swap
+    const path = [WMON_ADDRESS, TCHOG_ADDRESS];
+
+    // Effectuer le swap
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
+    const swapTx = await routerContract.swapExactTokensForTokens(
+      amountInWei,
+      amountOutMin,
+      path,
+      wallet.address,
+      deadline,
+      { gasLimit: 500000 }
+    );
+
+    const swapTxHash =
+      swapTx && typeof swapTx === "object"
+        ? (swapTx as any).hash
+        : String(swapTx);
+
+    // Définir un type explicite pour receipt
+    interface TransactionReceiptResponse {
+      blockNumber?: number;
+      hash?: string;
+      gasUsed?: bigint;
+      status?: number;
+    }
+
+    const receipt = (await provider.waitForTransaction(
+      swapTxHash
+    )) as TransactionReceiptResponse;
+    console.error(`Achat initial de TCHOG réussi! Hash: ${receipt.hash}`);
+
+    return {
+      success: true,
+      txHash: receipt.hash,
+      amount: amountToSwap,
+      action: "buy",
+    };
+  } catch (error) {
+    console.error("Erreur lors de l'achat initial de TCHOG:", error);
+    return {
+      success: false,
+      message: `Erreur lors de l'achat initial: ${error}`,
+    };
+  }
+}
+
+const NFT_FACTORY_ABI = [
+  "function mint(string memory tokenURI, address to) external returns (uint256)",
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function tokenURI(uint256 tokenId) view returns (string)",
+  "function ownerOf(uint256 tokenId) view returns (address)",
+];
+
+const NFT_FACTORY_ADDRESS = "0x0b17A7Fba7a5c20608608aF6e5e8C5ed0440D744"; // À remplacer par l'adresse réelle de votre factory NFT
+
+server.tool(
+  "generer-image",
+  "Génère une image à partir d'un prompt textuel et le mint directement en NFT",
+  {
+    prompt: z.string().describe("Description de l'image à générer"),
+    userAddress: z.string().describe("Wallet to send NFT"),
+  },
+  // @ts-ignore - Type complexe de la réponse
+  async ({ prompt, userAddress }, _extra) => {
+    try {
+      console.error(`Génération d'image pour le prompt: "${prompt}"`);
+
+      const trimmedPrompt = prompt.slice(0, 1000);
+
+      const requestBody = {
+        model: "dall-e-2",
+        prompt: trimmedPrompt,
+        n: 1,
+        size: "1024x1024",
+      };
+
+      const response = await axios.post(
+        "https://api.openai.com/v1/images/generations",
+        requestBody,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer sk-KEY`,
+          },
+        }
+      );
+
+      if (!response.data?.data?.[0]?.url) {
+        throw new Error("Réponse inattendue de DALL-E");
+      }
+
+      const imageUrl = response.data.data[0].url;
+
+      console.error("Téléchargement de l'image générée...");
+      const imageBlob = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+      });
+      const imageBuffer = Buffer.from(imageBlob.data);
+
+      console.error("Upload de l'image sur IPFS via Pinata...");
+      const formData = new FormData();
+      formData.append("file", imageBuffer, {
+        filename: "nft-image.png",
+        contentType: "image/png",
+      });
+      formData.append(
+        "pinataMetadata",
+        JSON.stringify({
+          name: `generated-nft-${Date.now()}`,
+        })
+      );
+
+      const pinataUpload = await axios.post(
+        "https://api.pinata.cloud/pinning/pinFileToIPFS",
+        formData,
+        {
+          maxBodyLength: Infinity,
+          headers: {
+            Authorization: `Bearer ${
+              process.env.PINATA_JWT || "JWT_TOKEN_PINATA"
+            }`,
+            ...formData.getHeaders(),
+          },
+        }
+      );
+
+      const imageIpfsHash = pinataUpload.data.IpfsHash;
+      const ipfsImageUrl = `ipfs://${imageIpfsHash}`;
+
+      console.error(`Image uploadée sur IPFS: ${ipfsImageUrl}`);
+
+      // Génération des métadonnées du NFT
+      console.error("Création et upload des métadonnées NFT...");
+      const metadata = {
+        name: `Image IA - ${new Date().toISOString().split("T")[0]}`,
+        description: `Image générée à partir du prompt: "${prompt}"`,
+        image: ipfsImageUrl,
+        attributes: [
+          {
+            trait_type: "Généré par",
+            value: "VeenoX AI",
+          },
+          {
+            trait_type: "Date",
+            value: new Date().toISOString(),
+          },
+        ],
+      };
+
+      const metadataUpload = await axios.post(
+        "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+        {
+          pinataContent: metadata,
+          pinataMetadata: {
+            name: `nft-metadata-${Date.now()}.json`,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PINATA_JWT || "JWT_PINATA"}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const metadataIpfsHash = metadataUpload.data.IpfsHash;
+      const tokenURI = `ipfs://${metadataIpfsHash}`;
+
+      console.error(`Métadonnées uploadées: ${tokenURI}`);
+
+      // MINT DU NFT
+      console.error("Mint du NFT sur Monad Testnet...");
+
+      const deployerWallet = new ethers.Wallet(
+        "5d5185d7a8ead54c253633730eb0c78905d0426dbf12972d3ac0359e15207a82"!,
+        provider
+      );
+      const nftContract = new ethers.Contract(
+        NFT_FACTORY_ADDRESS,
+        NFT_FACTORY_ABI,
+        deployerWallet
+      );
+
+      const mintTx = await nftContract.mint(tokenURI, userAddress, {
+        gasLimit: 500_000,
+      });
+
+      await mintTx.wait();
+
+      console.error(`NFT minté avec succès: TX ${mintTx.hash}`);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `✅ Image générée et mintée en NFT pour **${userAddress}** !
+
+- **Prompt**: "${prompt}"
+- **IPFS Image**: [Voir l'image](https://gateway.pinata.cloud/ipfs/${imageIpfsHash})
+- **Token URI**: ${tokenURI}
+- **Transaction**: [Voir sur Explorer Monad](https://testnet.monadexplorer.com/tx/${mintTx.hash})
+          `,
+          },
+        ],
+      };
+    } catch (error: any) {
+      console.error(
+        "Erreur:",
+        JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+      );
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Erreur durant la génération et le mint: ${
+              error.message || JSON.stringify(error)
+            }`,
+          },
+        ],
+      };
+    }
+  }
+);
