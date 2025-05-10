@@ -36,16 +36,10 @@ export function convertConstructorArg(value: any, paramType: string): any {
   }
 }
 
-/**
- * Élément aléatoire d'un tableau
- */
 export function randomElement<T>(array: T[]): T {
   return array[Math.floor(Math.random() * array.length)];
 }
 
-/**
- * Ajoute des jours à une date
- */
 export function addDays(date: Date, days: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
