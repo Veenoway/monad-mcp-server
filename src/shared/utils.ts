@@ -79,7 +79,6 @@ export function detectProxyPattern(bytecode: string): string[] {
     patterns.push("Transparent Proxy");
   }
 
-  // Recherche du modèle UUPS Proxy
   if (
     bytecode.includes("52d1902d") || // UUPSUpgradeable interface
     bytecode.includes("upgradeTo")
